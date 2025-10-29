@@ -549,21 +549,8 @@ tm_shape(regress_spatial)+
 ```
 Finally, we can also look at the spatial autocorrelation in GWR residuals. This exercise is left for the student (spoiler alert: there’s much less autocorrelation in GWR residuals than in OLS residuals). Note that the residuals are extracted above using the command shp$gwrE<-gwrresults$gwr.e.
 
-## 9. Spatial Error Regression (w/ Moran's I scatterplot of 99 permutations)
 
-### 9a. Compare
-
-## 10. Geographically Weighted Regression (GWR)
-
-### 10a. Global Regression Output (global R\^2, AIC, AICc)
-
-### 10b. Choropeth map of local R\^2 values
-
-### 10c. Moran's I scatterplot and random permutations test for GWR residuals
-
-### 10d?. Follow slide instructions to map local regression results
-
-## Model comparison (exercise is left for the student)
+## 9. Model comparison 
 
 We can do the following to compare all 4 models:
 1. Look at the Moran’s I of the residuals from each model and choose the model with the lowest (absolute) Moran’s I
