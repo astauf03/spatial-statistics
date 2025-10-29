@@ -27,7 +27,7 @@ options(scipen=999)
 
 ```{r}
 #Read the Regression Data shp
-regress_data <- st_read("data//RegressionData.shp")
+regress_data <- st_read("data/RegressionData.shp")
 ```
 
 ```{r}
@@ -109,6 +109,7 @@ moranI_mc <- moran.mc(regress_data$LNMEDINC, queenlist, nsim=999, alternative="t
 moranI_mc
 
 ```
+
 ```{r}
 # Histogram of the Moran’s I values from random permutations
 moranI_mc_res<-moranI_mc$res
@@ -116,10 +117,15 @@ hist(moranI_mc_res, freq=10000000, nclass=100)   #Draws distribution of Moran's 
 # Here, we draw a red vertical line at the observed value of our Moran's I
 abline(v=moran(regress_data$LNMEDINC, queenlist, n=length(queenlist$neighbours), S0=Szero(queenlist))$`I`, col='red')  
 ```
+
+**Monte Carlo Interpretation:** 0.55247 Moran's I value indicates strong positive spatial autocorrelation, so many of the block groups are clustered together with high-income areas aside other high-income areas and low-income areas aside other low-income areas.
+
 ```{r}
 #Create Moran plot (lagged value against observed value)
 moran.plot(regress_data$LNMEDINC, queenlist) 
 ```
+
+**Moran's I Plot Interpretation:** Many of the observations seem to fit along the positive line running through the lower left low-low quadrant and the upper right high-high quadrant, which also indicates positive spatial autocorrelation.
 
 ## 4. Local Moran's I
 
@@ -130,6 +136,7 @@ The localmoran function allows us to compute LISA statistics for each block grou
 lmoran<-localmoran(regress_data$LNMEDINC, queenlist)
 head(lmoran)
 ```
+
 ```{r}
 # Combine the original regression dataset with the Local Moran's I results so that each observation includes its corresponding local spatial statistic
 lmoran_df <-cbind(regress_data, as.data.frame(lmoran))
@@ -150,6 +157,7 @@ regress_data <- st_make_valid(regress_data) #Sometimes necessary if projection i
 #Creating the LISA Clusters
 moran_plot <- moran.plot(as.vector(scale(regress_data$LNMEDINC)), queenlist)
 ```
+
 ```{r}
 regress_data$quadrant <- NA
 # high-high
@@ -163,7 +171,6 @@ regress_data[(moran_plot$x <= 0 & moran_plot$wx >= 0) & (regress_data$local_I <=
 # non-significant
 regress_data[(regress_data$local_I > 0.05), "quadrant"] <- 5
 ```
-
 
 ```{r}
 # LISA P-Value Map
@@ -183,7 +190,6 @@ p_vals <- tm_shape(regress_data) +
 
 p_vals
 ```
-
 
 ```{r}
 # LISA Cluster Map
@@ -207,6 +213,7 @@ lisa_clusters
 ```
 
 ## 5. Regression Analysis: OLS Regression
+
 First, let’s run an OLS regression. The logLik command prints the log likelihood. We can also run the same tests for heteroscedasticity and normality of residuals that we see in the GeoDa output.
 
 ```{r}
@@ -217,26 +224,32 @@ ols_reg<-lm(formula=LNMEDINC ~ LNMEDHVAL + PCTVACANT, data=regress_data)
 
 summary(ols_reg)
 ```
+
 ```{r}
 #Prints the log likelihood
 logLik(ols_reg)  
 ```
+
 ```{r}
 #Prints the results of the Breusch-Pagan Test to assess whether heteroscedasticity is present (package: lmtest)
 bptest(ols_reg, studentize=FALSE)
 ```
+
 ```{r}
 #Prints the results of the Koenker-Bassett Test (also known as the Studentized Breusch-Pagan Test) to assess whether heteroscedasticity is present (package: lmtest)
 bptest(ols_reg)
 ```
+
 ```{r}
 #Prints the results of the White Test to assess whether heteroscedasticity is present (package: whitestrap)
 white_test(ols_reg)   
 ```
+
 ```{r}
 # Prints the results of the Jarque-Bera Test to assess whether residuals are normal (package: tseries)
 jarque.bera.test(ols_reg$residuals)
 ```
+
 Now, let’s generate standardized residuals, which are OLS Model residuals divided by an estimate of their standard deviation, and map them. Visually, it certainly seems that there’s spatial autocorrelation in the residuals, with some higher values clustered in the northeast and northwest of the city, and some lower values clustered in north Philadelphia and downtown. However, a visual assessment is not sufficient, and we will test the presence of spatial autocorrelation in two ways: 1) by regressing residuals on their queen neighbors, and 2) by looking at the Moran’s I of the residuals.
 
 ```{r}
@@ -252,14 +265,18 @@ OLS.Residuals.Map<-tm_shape(regress_data)+
   tm_layout(frame=FALSE, title = 'Standardised OLS Residuals')
 OLS.Residuals.Map
 ```
-First, let’s regress the OLS standardized residuals on the spatial lag of the OLS residuals (i.e., OLS residuals at the queen neighbors). We can see that the beta coefficient of the lagged residuals is significant and positive (0.598, p<0.0001), meaning that there’s a significant level of spatial autocorrelation in the residuals. This is consistent with Moran’s I of the residuals we see below.
+
+First, let’s regress the OLS standardized residuals on the spatial lag of the OLS residuals (i.e., OLS residuals at the queen neighbors). We can see that the beta coefficient of the lagged residuals is significant and positive (0.598, p\<0.0001), meaning that there’s a significant level of spatial autocorrelation in the residuals. This is consistent with Moran’s I of the residuals we see below.
+
 ```{r}
 #Regressing residuals on their nearest neighbors.
 regress_res_lm <- lm(formula=standardised_res ~ resnb)
 
 summary(regress_res_lm)
 ```
+
 Again, we can use moran.mc to generate a Moran’s I statistic and a pseudo p-value.
+
 ```{r}
 # Perform a Monte Carlo test for Moran’s I on the standardized OLS residuals
 # Arguments:
@@ -270,6 +287,7 @@ Again, we can use moran.mc to generate a Moran’s I statistic and a pseudo p-va
 
 moran.mc(standardised_res, queenlist, 999, alternative="two.sided")
 ```
+
 ```{r}
 # The plot shows the relationship between each observation’s residual and the average residuals of its neighboring observations
 # Arguments:
@@ -278,13 +296,14 @@ moran.mc(standardised_res, queenlist, 999, alternative="two.sided")
 
 moran.plot(standardised_res, queenlist)
 ```
+
 From the above, it is strongly apparent that spatial autocorrelation exists among the regression residuals of the OLS Model. The p-value is very small indicating that Moran’s I is significant. Because there’s clearly spatial autocorrelation in OLS residuals, the OLS Model is inappropriate and we need to consider another method. Here, we will attempt to run the Spatial Lag Model, the Spatial Error Model, and Geographically Weighted Regression.
 
 ## 6. Regression Analysis: Spatial Lag Regression
 
 To fit a Spatial Lag Model, we can use the lagsarlm function. This function works similarly to the lm function we are familiar with. The only key difference lies in the need to specify a weight matrix (neighbor list) created using nb2listw function.
 
-From the results, we can see that the rho parameter (spatial lag of LNMEDHHINC), has a value of 0.44383 and is significant. We also get the AIC for the Spatial Lag Model (1207.8) which is substantially smaller than the AIC for the linear model (lm AIC = 1443.3). We also get the log likelihood (-598.91), which is higher (i.e., better) than the value we get in OLS using the loglik command (-717.6489). The LR.Sarlm command does a likelihood ratio test comparing the Spatial Lag Model to the OLS Model. The null hypothesis here is that the Spatial Lag Model isn’t better than OLS, which we can reject (p-value <0.00001).
+From the results, we can see that the rho parameter (spatial lag of LNMEDHHINC), has a value of 0.44383 and is significant. We also get the AIC for the Spatial Lag Model (1207.8) which is substantially smaller than the AIC for the linear model (lm AIC = 1443.3). We also get the log likelihood (-598.91), which is higher (i.e., better) than the value we get in OLS using the loglik command (-717.6489). The LR.Sarlm command does a likelihood ratio test comparing the Spatial Lag Model to the OLS Model. The null hypothesis here is that the Spatial Lag Model isn’t better than OLS, which we can reject (p-value \<0.00001).
 
 ```{r}
 # Dependent variable: LNMEDINC (log of median income)
@@ -294,22 +313,28 @@ lag_reg<-lagsarlm(formula=LNMEDINC ~ LNMEDHVAL + PCTVACANT, data=regress_data, q
 
 summary(lag_reg)
 ```
+
 ```{r}
 LR.Sarlm(lag_reg, ols_reg) #Here lag_reg is the SL output; ols_reg is the OLS output
 ```
+
 ```{r}
 #Prints the results of the Breusch-Pagan Test to assess whether heteroscedasticity is present (package: lmtest)
 bptest.Sarlm(lag_reg, studentize=FALSE)
 ```
+
 ```{r}
 #Prints the results of the Koenker-Bassett Test (also known as the Studentized Breusch-Pagan Test) to assess whether heteroscedasticity is present (package: lmtest)
 bptest.Sarlm(lag_reg)  
 ```
+
 ```{r}
 #Prints the results of the Jarque-Bera Test to assess whether residuals are normal (package: tseries)
 jarque.bera.test(lag_reg$residuals)
 ```
+
 Now, we can map the Spatial Lag Model residuals (which is an exercise left for the student) and look at the the Moran’s I of the Spatial Lag Model residuals. We see that these residuals from the Spatial Lag Model aren’t spatially autocorrelated, which is exactly what we were hoping to achieve.
+
 ```{r}
 lag_res <- lag_reg$residuals
 
@@ -328,7 +353,7 @@ lag_moran_mc
 
 To fit a Spatial Error Model, we use the errorsarlm function.
 
-Here, we see that lambda has the value of 0.45391 and is significant. We can also look at the AIC and the log likelihood. The AIC here is 1271.8, which is lower (better) than in OLS but higher (worse) than in the Spatial Lag Model. The log likelihood here is -630.899, which is higher than the value we see for OLS. The LR.Sarlm command does a likelihood ratio test comparing the Spatial Error Model to the OLS Model. The null hypothesis here is that the Spatial Error Model isn’t better than OLS, which we can reject (p-value <0.00001).
+Here, we see that lambda has the value of 0.45391 and is significant. We can also look at the AIC and the log likelihood. The AIC here is 1271.8, which is lower (better) than in OLS but higher (worse) than in the Spatial Lag Model. The log likelihood here is -630.899, which is higher than the value we see for OLS. The LR.Sarlm command does a likelihood ratio test comparing the Spatial Error Model to the OLS Model. The null hypothesis here is that the Spatial Error Model isn’t better than OLS, which we can reject (p-value \<0.00001).
 
 ```{r}
 error_reg <- errorsarlm(formula=LNMEDINC ~ LNMEDHVAL + PCTVACANT, data=regress_data, queenlist)
@@ -339,24 +364,29 @@ error_res_mean <- sapply(queen_neighbors, function(x) mean(error_res[x]))
 
 summary(error_reg)
 ```
+
 ```{r}
 # Perform a likelihood ratio (LR) test comparing the spatial error model to OLS
 #  - error_reg: fitted spatial error model (errorsarlm)
 #  - ols_reg: fitted OLS model
 LR.Sarlm(error_reg, ols_reg)
 ```
+
 ```{r}
 #Prints the results of the Breusch-Pagan Test to assess whether heteroscedasticity is present (package: lmtest)
 bptest.Sarlm(error_reg, studentize=FALSE)
 ```
+
 ```{r}
 #Prints the results of the Koenker-Bassett Test (also known as the Studentized Breusch-Pagan Test) to assess whether heteroscedasticity is present (package: lmtest)
 bptest.Sarlm(error_reg)   
 ```
+
 ```{r}
 #Prints the results of the Jarque-Bera Test to assess whether residuals are normal (package: tseries)
 jarque.bera.test(error_reg$residuals)
 ```
+
 ```{r}
 # Perform a Monte Carlo test for Moran's I on the residuals of the spatial error model
 #  - error_res: residuals from the spatial error model (errorsarlm)
@@ -388,8 +418,7 @@ method: Here, you specify how an ‘optimal’ bandwidth should be defined. AIC 
 
 adapt: TRUE returns a proportion between 0 and 1 of the observations to include in the weighting scheme for an adaptive bandwidth. On the other hand, if a global fixed bandwidth that remains constant for all locations suit your purpose, set this parameter as FALSE.
 
-Let’s start with adaptive bandwidth, which varies the distance, but fixes the number of neighbors for each observation. Given that we specified a preference for an adaptive bandwidth optimized based on AICc, the output (despite its labels) is not a distance, but rather, the proportion of observations to be included for each location in the GWR Model. Here, it is recommended that 0.007862703 (or ~0.786%) of the observations be used for each location - the bandwidth should be adapted to capture about 13 observations (0.00786*1720) for each location. You might think this is too few observations to be fitted for each local regression - in this case, the printed AICc measures can serve as a guidance for the proportion you may input in the GWR Model later on. Keep in mind that finding the optimal value of bandwidth takes a while, so be patient while the code runs.
-
+Let’s start with adaptive bandwidth, which varies the distance, but fixes the number of neighbors for each observation. Given that we specified a preference for an adaptive bandwidth optimized based on AICc, the output (despite its labels) is not a distance, but rather, the proportion of observations to be included for each location in the GWR Model. Here, it is recommended that 0.007862703 (or \~0.786%) of the observations be used for each location - the bandwidth should be adapted to capture about 13 observations (0.00786\*1720) for each location. You might think this is too few observations to be fitted for each local regression - in this case, the printed AICc measures can serve as a guidance for the proportion you may input in the GWR Model later on. Keep in mind that finding the optimal value of bandwidth takes a while, so be patient while the code runs.
 
 ```{r}
 
@@ -397,6 +426,7 @@ Let’s start with adaptive bandwidth, which varies the distance, but fixes the 
 regress_spatial <- as(regress_data, 'Spatial')  #These analyses are easier to do when the data are of the SpatialPolygonsDataFrame class
 class (regress_spatial)
 ```
+
 ```{r}
 # Select an adaptive bandwidth for Geographically Weighted Regression (GWR)
 #   - formula: dependent variable (LNMEDINC) and predictors (LNMEDHVAL, PCTVACANT)
@@ -409,10 +439,13 @@ bandwidth <- gwr.sel(formula = LNMEDINC ~ LNMEDHVAL + PCTVACANT,
               method = "aic",
               adapt = TRUE)
 ```
+
 ```{r}
 bandwidth
 ```
+
 We might also want to create a fixed bandwidth. Notice that the output values more closely approximate distance (in the units of the shapfile, i.e., feet) instead of a proportion between 0 and 1.
+
 ```{r}
 #setting a fixed bandwidth
 bandwidth_fixed<-gwr.sel(formula=LNMEDINC~LNMEDHVAL+PCTVACANT, 
@@ -420,9 +453,11 @@ bandwidth_fixed<-gwr.sel(formula=LNMEDINC~LNMEDHVAL+PCTVACANT,
             method = "aic",
             adapt = FALSE)
 ```
+
 ```{r}
 bandwidth_fixed
 ```
+
 Running GWR To fit a GWR Model, we use the command gwr. Again, specify the formula as used in the previous OLS Model and the bandwidth defined in the earlier step.
 
 We can also set a geographical weighting function for the bandwidth to specify how observations of varying distances from the location should be accounted for. If gweight=gwr.Gauss, the weights allocated to distributions vary normally like in a Gaussian (i.e., normal) distribution. If gwr.bisquare is specified, observations within the a certain distance threshold (specified by the bandwidth) from the location are weighted as 1, while observations beyond this threshold are weighted as 0.
@@ -430,6 +465,7 @@ We can also set a geographical weighting function for the bandwidth to specify h
 We can compare the outputs from using an adaptive bandwidth specified by the proportion of observations included in each local regression (adapt=bw), and a fixed bandwidth (bandwidth=bw_fixed).
 
 Below are the results using the adaptive bandwidth.
+
 ```{r}
 # Formula: dependent variable (LNMEDINC) and predictors (LNMEDHVAL, PCTVACANT)
 #   - data: regress_data (SpatialPolygonsDataFrame)
@@ -446,6 +482,7 @@ gwr_model<-gwr(formula=LNMEDINC~LNMEDHVAL+PCTVACANT,
 
 gwr_model
 ```
+
 Below are the results using the fixed bandwidth.
 
 ```{r}
@@ -468,6 +505,7 @@ Presenting GWR Output Using Adaptive Bandwidth We can look at a summary of the c
 # Summarize the SpatialDataFrame output from the GWR model
 summary(gwr_model$SDF)
 ```
+
 We can also map the standardized coefficients. The higher the absolute value of the ratio between the coefficient and the standard error, the more plausible it is that the relationship between the predictor and the dependent variable is significant at the location.
 
 ```{r}
@@ -491,6 +529,7 @@ coefPCTVACANT<-tm_shape(regress_data)+
 tmap_arrange(coefLNMEDHVAL, coefPCTVACANT, ncol=2)
 
 ```
+
 ```{r}
 
 #The maps above are the ones using the exact code that our professor had but it looked funky so here is the code that I made to try and fix it.
@@ -547,7 +586,6 @@ tmap_arrange(coefLNMEDHVAL, coefPCTVACANT, ncol = 2)
 
 ```
 
-
 And we can also look at the spatial distribution of the local R-squares. We can see that the two predictors do a good job explaining the variance in our dependent variable in NW Philadelphia, but not in many other parts of the city.
 
 ```{r}
@@ -556,15 +594,12 @@ tm_shape(regress_data)+
   tm_layout(frame=FALSE)
 
 ```
+
 Finally, we can also look at the spatial autocorrelation in GWR residuals. This exercise is left for the student (spoiler alert: there’s much less autocorrelation in GWR residuals than in OLS residuals). Note that the residuals are extracted above using the command shp$gwrE<-gwrresults$gwr.e.
 
+## 9. Model comparison
 
-## 9. Model comparison 
-
-We can do the following to compare all 4 models:
-1. Look at the Moran’s I of the residuals from each model and choose the model with the lowest (absolute) Moran’s I
-2. Compare the AIC values from each model and choose the model with the lowest value
-
+We can do the following to compare all 4 models: 1. Look at the Moran’s I of the residuals from each model and choose the model with the lowest (absolute) Moran’s I 2. Compare the AIC values from each model and choose the model with the lowest value
 
 ```{r}
 # Compute Moran's I of residuals for each model to measures remaining spatial autocorrelation. 
@@ -576,7 +611,6 @@ moran_error <- moran.mc(error_reg$residuals, queenlist, 999, alternative = "two.
 moran_gwr <- moran.mc(gwr_model$SDF$gwr.e, queenlist, 999, alternative = "two.sided")
 ```
 
-
 ```{r}
 moran_ols 
 moran_lag 
@@ -584,9 +618,7 @@ moran_error
 moran_gwr
 ```
 
-In addition, we can do the following to compare the Spatial Lag Model to OLS:
-1. Compare the log likelihoods; the model with the higher value is the better one.
-2. Examine the results of the likelihood ratio test; if it’s significant, the Spatial Lag Model is better than OLS.
+In addition, we can do the following to compare the Spatial Lag Model to OLS: 1. Compare the log likelihoods; the model with the higher value is the better one. 2. Examine the results of the likelihood ratio test; if it’s significant, the Spatial Lag Model is better than OLS.
 
 ```{r}
 # Compare AIC values. 
@@ -598,17 +630,17 @@ aic_error <- AIC(error_reg)
 aic_gwr <- gwr_model$results$AICc   # GWR reports a corrected AIC (AICc)
 ```
 
-
 ```{r}
 aic_ols
 aic_lag
 aic_error
 aic_gwr
 ```
+
 In addition, we can do the following to compare the Spatial Error Model to OLS:
 
-1. Compare the log likelihoods; the model with the higher value is the better one.
-2. Examine the results of the likelihood ratio test; if it’s significant, the Spatial Error Model is better than OLS.
+1.  Compare the log likelihoods; the model with the higher value is the better one.
+2.  Examine the results of the likelihood ratio test; if it’s significant, the Spatial Error Model is better than OLS.
 
 ```{r}
 # Compare Log-Likelihoods and Likelihood Ratio Tests.
@@ -623,16 +655,15 @@ lr_lag_vs_ols   <- LR.Sarlm(lag_reg, ols_reg)
 lr_error_vs_ols <- LR.Sarlm(error_reg, ols_reg)
 ```
 
-
 ```{r}
 lr_lag_vs_ols
 lr_error_vs_ols
 # Significant LR test (p < 0.05) = spatial model significantly improves on OLS.
 ```
+
 Lastly, we can also do the following to compare GWR to OLS:
 
-1.Compare the R2 from OLS with the Quasi-global R2 from GWR; the model with the higher value is the better one.
-2. Examine whether there’s spatial variability in standardized coefficients or local R2 values. If there is, it might mean that a single global regression might not capture the varying spatial relationships between the dependent variable and the predictors.
+1.Compare the R2 from OLS with the Quasi-global R2 from GWR; the model with the higher value is the better one. 2. Examine whether there’s spatial variability in standardized coefficients or local R2 values. If there is, it might mean that a single global regression might not capture the varying spatial relationships between the dependent variable and the predictors.
 
 ```{r}
 # Compare R-squared values (OLS vs. GWR) GWR = quasi-global R-squared to compare with OLS.
@@ -649,7 +680,6 @@ r2_ols
 r2_gwr
 # Higher R² = model explains more variance.
 ```
-
 
 ```{r}
 # Comparison summary table
@@ -681,6 +711,7 @@ comparison <- data.frame(
 
 comparison
 ```
+
 ```{r}
 # The R-squared of 0.63 for GWR is noticeably higher than OLS’s 0.44, suggesting that the relationships between median income and predictors vary across space. Mapping the local R-squared and standardized coefficients will reveal these spatial variations, confirming that a single global model doesn’t fully capture local dynamics.
 
@@ -690,4 +721,3 @@ comparison
 
 # GWR with an adaptive bandwidth provides the best overall fit, with the lowest AIC (1069.12) and a R² of 0.63. This confirms that a single global regression is insufficient to capture the nuanced spatial relationships, and GWR is better suited for modeling local variation.
 ```
-
