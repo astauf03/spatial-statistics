@@ -471,71 +471,77 @@ summary(gwr_model$SDF)
 We can also map the standardized coefficients. The higher the absolute value of the ratio between the coefficient and the standard error, the more plausible it is that the relationship between the predictor and the dependent variable is significant at the location.
 
 ```{r}
-# Create readable break labels 
-breaks <- c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf)
-labels <- c("Less than -6", "-6 to -4", "-4 to -2", "-2 to 0", 
-            "0 to 2", "2 to 4", "4 to 6", "Greater than 6")
+gwr_results <- as.data.frame(gwr_model$SDF)
+regress_data$coefLNMEDHVALst <- gwr_results$LNMEDHVAL/gwr_results$LNMEDHVAL_se
+regress_data$coefPCTVACANTst <- gwr_results$PCTVACANT/gwr_results$PCTVACANT_se
 
-gwr_results<-as.data.frame(gwr_model$SDF)
-regress_spatial$coefLNMEDHVALst<-gwr_results$LNMEDHVAL/gwr_results$LNMEDHVAL_se
-regress_spatial$coefPCTVACANTst<-gwr_results$PCTVACANT/gwr_results$PCTVACANT_se
+regress_data$gwrE <- gwr_results$gwr.e
+regress_data$localR2 <- gwr_results$localR2
 
-regress_spatial$gwrE<-gwr_results$gwr.e
-regress_spatial$localR2<-gwr_results$localR2
+coefLNMEDHVAL<-tm_shape(regress_data)+
+  tm_fill(col='coefLNMEDHVALst', breaks=c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf), title='Standardized coefficient of LNMEDHVAL', 
+          palette ='-RdBu')+
+  tm_layout(frame=FALSE, title = 'Median House Value (Log)')
 
-# LNMEDHVAL standardized coefficient map
-coefLNMEDHVAL <- tm_shape(regress_spatial) +
-  tm_polygons(
+coefPCTVACANT<-tm_shape(regress_data)+
+  tm_fill(col='coefPCTVACANTst', breaks=c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf), title='Standardized coefficient of PCTVACANT', 
+          palette='-RdBu')+
+  tm_layout(frame=FALSE, title = 'Percentage of Housing Vacant')
+
+tmap_arrange(coefLNMEDHVAL, coefPCTVACANT, ncol=2)
+
+```
+```{r}
+library(tmap)
+
+# Median House Value map
+coefLNMEDHVAL <- tm_shape(regress_data) +
+  tm_fill(
     col = "coefLNMEDHVALst",
-    palette = "-RdBu",
-    breaks = breaks,
-    labels = labels,        # custom labels
-    style = "fixed"         # fixed breaks
+    breaks = c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf),
+    title = "Standardized Coef: LNMEDHVAL",
+    palette = "-RdBu"
   ) +
   tm_layout(
     frame = FALSE,
-    legend.position = c("right", "bottom"),   # bottom-right corner
-    legend.title.size = 0.8,
-    legend.text.size = 0.7
-  ) +
-  tm_title("Median House Value (Log)")
-
-# PCTVACANT standardized coefficient map
-coefPCTVACANT <- tm_shape(regress_spatial) +
-  tm_polygons(
-    col = "coefPCTVACANTst",
-    palette = "-RdBu",
-    breaks = breaks,
-    labels = labels,
-    style = "fixed",
-    fill.legend = tm_legend(
-      title = "Std. Coefficient\nPCTVACANT",
-      position = c("right", "bottom"),
-      text.size = 0.6,
-      hist.height = 0.25,
-      bg.color = "white",
-      bg.alpha = 0.8,
-      frame = FALSE
-    )
-  ) +
-  tm_title("Percentage of Housing Vacant") +
-  tm_layout(
-    frame = FALSE,
-    outer.margins = c(0.01, 0.01, 0.01, 0.01),
-    legend.position = c("right", "bottom"),
-    legend.title.size = 0.8,
-    legend.text.size = 0.6
+    title = "Median House Value (Log)",
+    title.position = c("center", "top"),
+    title.size = 1.2,
+    legend.position = c("RIGHT", "BOTTOM"),  # Inside map, bottom right
+    legend.just = c("right", "bottom"),
+    legend.bg.color = "white",
+    legend.bg.alpha = 0.9,
+    legend.text.size = 0.6,
+    legend.title.size = 0.6,
+    inner.margins = c(0.1, 0.15, 0.1, 0.15)  # top, right, bottom, left
   )
 
-tmap_arrange(
-  LNMEDHVAL_coef,
-  PCTVACANT_coef,
-  ncol = 2,
-  widths = c(1, 1),  # equal map width
-  heights = c(1)     # larger overall map height
-)
+# Vacancy map
+coefPCTVACANT <- tm_shape(regress_data) +
+  tm_fill(
+    col = "coefPCTVACANTst",
+    breaks = c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf),
+    title = "Standardized Coef: PCTVACANT",
+    palette = "-RdBu"
+  ) +
+  tm_layout(
+    frame = FALSE,
+    title = "Percentage of Housing Vacant",
+    title.position = c("center", "top"),
+    title.size = 1.2,
+    legend.position = c("RIGHT", "BOTTOM"),
+    legend.just = c("right", "bottom"),
+    legend.bg.color = "white",
+    legend.bg.alpha = 0.9,
+    legend.text.size = 0.6,
+    legend.title.size = 0.6,
+    inner.margins = c(0.1, 0.15, 0.1, 0.15)
+  )
 
-# WHY WONT MY FUCKING LABELS WORK ASDDFJKGHJAKDGLHL
+tmap_arrange(coefLNMEDHVAL, coefPCTVACANT, ncol = 2)
+
+
+
 ```
 
 
