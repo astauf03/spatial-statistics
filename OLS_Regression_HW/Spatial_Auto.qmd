@@ -178,6 +178,7 @@ p_vals <- tm_shape(regress_data) +
   tm_polygons(col = "local_I", title = "",
               breaks = c(-Inf, 0.001, 0.01, 0.05, Inf),
               palette = c("darkblue", "blue", "lightblue", "white")) +
+  tm_borders(col = "gray", lwd = 0.5) +
   tm_layout(
     legend.outside = TRUE,
     legend.text.size = 1,
@@ -189,6 +190,8 @@ p_vals <- tm_shape(regress_data) +
   )
 
 p_vals
+
+#tmap_save(p_vals, filename = "HW2_Plots/p_vals_Map.png", width = 8, height = 8, dpi = 300)
 ```
 
 **LISA p-Value Map Interpretation:** Many statistically significant block clusters deeper in northeast and northwest Philadelphia, as well as parts of West Philadelphia in the Mantua neighborhood above Market St, North Philadelphia in the Strawberry Mansion and Kensington neighborhoods, and very east bordering along the Delaware River. Whether these are high-high or low-low priced areas is not indicated on this map, but the map below.
@@ -201,6 +204,7 @@ lisa_clusters <- tm_shape(regress_data) +
           palette = c("red", "blue", "lightpink", "skyblue2", "white"),
           labels = c("High-High", "Low-Low", "High-Low", "Low-High", "Non-significant")) +
   tm_borders(alpha = 0.5) +
+  tm_borders(col = "gray", lwd = 0.5) +
   tm_layout(
     frame = FALSE,
     legend.outside = TRUE,
@@ -212,6 +216,8 @@ lisa_clusters <- tm_shape(regress_data) +
   )
 
 lisa_clusters
+
+#tmap_save(lisa_clusters, filename = "HW2_Plots/lisa_clusters_Map.png", width = 8, height = 8, dpi = 300)
 ```
 
 **LISA Cluster Map:** Aligning with the p-Value map above, it looks like those clustered spaces in Northeast and Northwest Philadelphia as well as along the Delaware River are high-high clusters compared to the rest of the block groups, where the North Philadelphia and West Philadelphia areas are low-low clusters.
@@ -744,6 +750,7 @@ map <- tm_shape(regress_data)+
 
 map
 ```
+
 ```{r}
 # Save it
 #tmap_save(map, filename = "HW2_Plots/LocalR2_Map.png", width = 8, height = 8, dpi = 300)
