@@ -275,7 +275,7 @@ white_test(ols_reg)
 jarque.bera.test(ols_reg$residuals)
 ```
 
-**Jarque Bera Test Interpretation:** 
+**Jarque Bera Test Interpretation:** This test observes for normal residuals, with the null hypothesis being that the residuals are normally distributed and the alternative hypothesis that the residuals are not normally distributed. The p-value is also very small, meaning we reject the null hypothesis. Because there are so many block groups, this does not bias coefficients, but combined with heteroscedasticity, the p-values may be slightly off.
 
 Now, let’s generate standardized residuals, which are OLS Model residuals divided by an estimate of their standard deviation, and map them. Visually, it certainly seems that there’s spatial autocorrelation in the residuals, with some higher values clustered in the northeast and northwest of the city, and some lower values clustered in north Philadelphia and downtown. However, a visual assessment is not sufficient, and we will test the presence of spatial autocorrelation in two ways: 1) by regressing residuals on their queen neighbors, and 2) by looking at the Moran’s I of the residuals.
 
