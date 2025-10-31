@@ -473,6 +473,15 @@ error_moran_mc
 moran.plot(error_res, queenlist)
 ```
 
+```{r}
+data.frame(
+  Model = c("Spatial Lag", "Spatial Error"),
+  LogLik = c(logLik(lag_reg), logLik(error_reg)),
+  AIC = c(AIC(lag_reg), AIC(error_reg)),
+  SC = c(BIC(lag_reg), BIC(error_reg))
+)
+```
+
 ## 8. Regression Analysis: Geographically Weighted Regression
 
 ###Bandwidth Selection
