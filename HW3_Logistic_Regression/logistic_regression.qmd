@@ -43,7 +43,7 @@ In your report, in addition to the counts that you can obtain with the table com
 
 *2.b.i.* For the first predictor (`FATAL_OR_M`), record the number and percentage of 1-responses (i.e., fatalities or major injuries) for both categories of the variable `DRINKING_D`, as well as the total number of 1-responses (i.e., fatalities or major injuries) in the data set. That is, how many fatalities or major injuries were there when the driver wasn’t inebriated, when the driver was inebriated, and altogether?
 
-*2.b.ii.* Repeat step 2.b.i above for the rest of the binary predictors.
+*2.b.ii.* Repeat step *2.b.i* above for the rest of the binary predictors.
 
 ```{r cross-tabulations}
 # I made a function to loop through it so I don't have to do this 7 separate times.
@@ -78,7 +78,7 @@ for (var in predictors) {
 }
 ```
 
-*2.b.iii.* In your report, you will be asked to present the cross-tabulations from 2.b.i and 2.b.ii in a table.
+*2.b.iii.* In your report, you will be asked to present the cross-tabulations from *2.b.i* and *2.b.ii* in a table.
 
 *2.b.iv.* Prior to doing predictive modeling, statisticians often use the Chi-Square (χ2) test to determine whether the distribution of one categorical variable varies with respect to the values of another categorical variable. If we were to look at a cross-tabulation of the variables DRINKING_D and FATAL_OR_M, the null and alternative hypotheses for the χ2 test would be as follows:
 
@@ -90,11 +90,11 @@ vs.
 
 As usual, a high value of the χ2 statistic, and a p-value lower than 0.05 suggest that there’s evidence to reject the null hypothesis in favor of the alternative, and that there’s an association between drunk driving and crash fatalities.
 
-*2.b.iv.1.* To carry out the χ2 test in R to test the hypothesis above, you would use the syntax `CrossTable(cdc_data$FATAL_OR_M, cdc_data$DRINKING_D, prop.r = FALSE, prop.t = FALSE, prop.chisq = FALSE, chisq = TRUE)`. The χ2 results will appear below the cross-tabulation table that you have seen in 2.b.i above. Report the results without the Yates Continuity Correction.
+*2.b.iv.1.* To carry out the χ2 test in R to test the hypothesis above, you would use the syntax `CrossTable(cdc_data$FATAL_OR_M, cdc_data$DRINKING_D, prop.r = FALSE, prop.t = FALSE, prop.chisq = FALSE, chisq = TRUE)`. The χ2 results will appear below the cross-tabulation table that you have seen in *2.b.i* above. Report the results without the Yates Continuity Correction.
 
-*2.b.iv.2.* Modifying the syntax in 2.b.iv.1 above, run the χ2 test examining the association between the dependent variable and the remaining binary predictors.
+*2.b.iv.2.* Modifying the syntax in *2.b.iv.1* above, run the χ2 test examining the association between the dependent variable and the remaining binary predictors.
 
-*2.b.iv.3.* In the table 2.b.iii above, add another column called “χ2 p-value”. For each row, present the p-value from the corresponding χ2 test.
+*2.b.iv.3.* In the table *2.b.iii* above, add another column called “χ2 p-value”. For each row, present the p-value from the corresponding χ2 test.
 
 *2.b.iv.3.a.* Note, however, that in practice, statisticians generally present not just the p-value, but also the value of the χ2 statistic and the degrees of freedom, which is the parameter of the χ2 distribution. The degrees of freedom is calculated as (R − 1)(C − 1), where R is the number of rows in the cross-tabulation table and C is the number of columns in the cross-tabulation table. Said differently, R is the number of categories of the first variable and C is the number of categories in the second variable. Here, because we are cross-tabulating two binary variables, both R and C are 2, and df = (R − 1)(C − 1) = 1.
 
@@ -118,8 +118,41 @@ A high value of the t-statistic, and a p-value lower than 0.05 suggest that ther
 
 *2.c.iii.2.* Repeat the t-test for the variable `MEDHHINC.`
 
-*2.c.iii.3.* In the table 2.c.ii above, add another column called “t-test pvalue”. For each row, present the p-value from the corresponding t-test.
+*2.c.iii.3.* In the table *2.c.ii* above, add another column called “t-test pvalue”. For each row, present the p-value from the corresponding t-test.
 
 *2.c.iii.3.a.* Note, however, that in practice, statisticians generally present not just the p-value, but also the value of the t-statistic and the degrees of freedom.
 
 *2.d.* Using the instructions from Assignment 1, examine the Pearson correlations between all the predictors (both binary and continuous). Is there evidence of severe multicollinearity here? (Be sure the appropriate R library is loaded).
+
+*3.* Now that we’re done with exploratory analysis, we are ready to proceed to running the logistic regression.
+
+*3.a.* Using the `glm` command for logistic regression (as shown in the slides), regress the `DRINKING_D` variable on the following predictors: `FATAL_OR_M`, `OVERTURNED`, `CELL_PHONE`, `SPEEDING`, `AGGRESSIVE`, `DRIVER1617`, `DRIVER65PLUS`, `PCTBACHMOR`, and `MEDHHINC`.
+
+*3.a.i.* Use the summary command to examine the results.
+
+*3.a.ii.* For each predictor, also compute the odds ratio and the 95% confidence interval (CI) using commands shown in the slides. Use the syntax presented on the slide titled ‘Merging Odds Ratios to 𝛽 Coefficients in R’ to merge the odds ratios and CIs to the matrix that contains coefficients and p-values. Present the resulting (merged) matrix in your report.
+
+*3.a.iii.* Using the syntax presented in the slides, calculate the sensitivity, specificity and misclassification rate for each of the following cut-off values: **0.02; 0.03; 0.05; 0.07; 0.08; 0.09; 0.10; 0.15; 0.20; 0.50** and present them in a table. In the table, highlight the cut-off value which has the lowest misclassification rate.
+
+| Cut-Off Value | Sensitivity | Specificity | Misclassification Rate |
+|---------------|-------------|-------------|------------------------|
+| **0.02**      |             |             |                        |
+| **0.03**      |             |             |                        |
+| **0.05**      |             |             |                        |
+| **0.07**      |             |             |                        |
+| **0.08**      |             |             |                        |
+| **0.09**      |             |             |                        |
+| **0.10**      |             |             |                        |
+| **0.15**      |             |             |                        |
+| **0.20**      |             |             |                        |
+| **0.50**      |             |             |                        |
+
+: 3.a.iii Table
+
+*3.a.iv.* Using the syntax presented in the slides, generate the ROC curve, and identify the optimal cut-off value. Be sure to export the image of the ROC curve (as you will be expected to present it in your report).
+
+*3.a.v.* Using the syntax presented in the slides, calculate the area under the ROC curve.
+
+*3.b.* Re-run the model without the `PCTBACHMOR` and `MEDHHINC` terms. As in *3.a.i* and *3.a.ii* above, use the summary command to examine results, and calculate the odds ratio and the 95% confidence interval for each predictor. As in *3.a.ii* above, merge the odds ratios and confidence intervals to the matrix containing coefficients and p-values. Present the resulting (merged) matrix in your report.
+
+*3.c.* Compare the two models using the Akaike Information Criterion (AIC). The results are typically presented at the bottom of the logistic regression output. They may also be obtained using the `AIC` command. For instance, if the results obtained from the `glm` command for the first model are saved as `mylogit1` and the results from the second model are saved as `mylogit2`, the R syntax to obtain the AICs from both models would be `AIC(mylogit1, mylogit2)`. Here, recall that lower values of the AIC correspond to a better model.
