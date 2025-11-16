@@ -1,0 +1,77 @@
+---
+title: Logistic and Multinomial Logistic Regression
+format: html
+editor: visual
+---
+
+Model: Regressing binary dependent variable, `DRINKING_D`, on the following
+binary and continuous predictors: `FATAL_OR_M`, `OVERTURNED`, `CELL_PHONE`, `SPEEDING`,
+`AGGRESSIVE`, `DRIVER1617`, `DRIVER65PLUS`, `PCTBACHMOR`, and `MEDHHINC`.
+
+Prior to running any of the analyses, be sure to set the working directory using the
+setwd command, install the relevant R packages using the install.packages command,
+and load the relevant packages using the library command.
+
+```{r setup}
+library(aod)
+library(ggplot2)
+library(rms)
+library(gmodels)
+library(nnet)
+library(DAAG)
+library(ROCR)
+library(xtable)
+
+options(scipen=999)
+```
+
+Import the file Logistic Regression Data.csv into R using the read.csv command. Now,
+you are ready to do some exploratory analyses.
+
+```{r load data}
+cdc_data <- read.csv("data/logistic_regression.csv")
+
+head(cdc_data)
+```
+
+Using the table and prop.table commands, tabulate the dependent variable,
+DRINKING_D.
+
+```{r tabulate}
+DRINKING_D.tab <- table(cdc_data$DRINKING_D)
+
+prop.table(DRINKING_D.tab)
+```
+
+In your report, in addition to the counts that you can obtain with the table
+command, you will be asked to report the proportion of crashes that involved a
+drunk driver using the prop.table command as above.
+
+Using the CrossTable command in the gmodels library, examine the cross-tabulations between the dependent variable, `DRINKING_D`, and the following binary predictor variables: `FATAL_OR_M`, `OVERTURNED`, `CELL_PHONE`, `SPEEDING`, `AGGRESSIVE`, `DRIVER1617`, and `DRIVER65PLUS`.
+
+```{r cross-tabulations}
+# I made a function to loop through it so I don't have to do this 7 separate times.
+predictors <- c(
+  "FATAL_OR_M", "OVERTURNED", "CELL_PHONE",
+  "SPEEDING", "AGGRESSIVE",
+  "DRIVER1617", "DRIVER65PLUS"
+  )
+
+for (var in predictors) {
+  cat("\nCrosstab: DRINKING_D vs", var, "\n")
+
+  CrossTable(cdc_data$DRINKING_D, cdc_data[[var]],
+             prop.r = FALSE,
+             prop.chisq = FALSE,
+             chisq = FALSE,
+             prop.t = FALSE)
+}
+```
+
+For the first predictor (FATAL_OR_M), record the number and percentage of 1-responses (i.e., fatalities or major injuries) for both categories of the variable DRINKING_D, as well as the total number of 1-responses (i.e., fatalities or major injuries) in the data set. That is, how many fatalities or major injuries were there when the driver wasn’t inebriated, when the driver was inebriated, and altogether?
+
+```{r}
+
+```
+
+Repeat step 2.b.i above for the rest of the binary predictors. 
