@@ -1,0 +1,29 @@
+---
+title: HOMEWORK 4
+format: html
+editor: visual
+resources:
+  - "Lecture 21 - Point Pattern Analysis.html"
+---
+
+Note: Need to decide among ...
+
+**Text Analysis Lecture 25-1: *Text Mining***
+
+**Text Analysis Lecture 25-2: *Using ChatGPT for Data Analysis***
+
+**Point Pattern Analysis Lecture 21: *Point Pattern Analysis***
+
+**K-Means Clustering Lecture 22-1: *K-Means Clustering***
+
+**K-Means Clustering Lecture 22-2: *DBSCAN Clustering***
+
+```{r library-setup}
+library(dplyr)
+library(stringr)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+
+options(scipen = 999)
+```

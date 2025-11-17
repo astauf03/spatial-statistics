@@ -1,0 +1,148 @@
+---
+title: "Using ChatGPT for Text Analysis"
+author: "Eugene Brusilovskiy"
+date: "`r Sys.Date()`"
+output: rmdformats::readthedown
+---
+
+## Creating a Text Dataset in R from a Reliable Local Source
+
+This example uses the `quanteda` package's `data_corpus_inaugural` data set, which contains U.S. presidential inaugural speeches.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+## Creating a Text Dataset Using `quanteda`'s Built-in Inaugural Corpus
+library(quanteda)
+
+# Load built-in inaugural corpus
+data_corpus <- data_corpus_inaugural
+
+# Convert to data frame using as.character()
+text_data <- data.frame(
+  year = as.numeric(docvars(data_corpus, "Year")),
+  president = docvars(data_corpus, "President"),
+  text = as.character(data_corpus),
+  stringsAsFactors = FALSE
+)
+
+# Preview
+head(text_data)
+
+
+# View sample
+head(text_data)
+
+```
+
+## Use ChatGPT for Analyses within R
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# Install packages if needed
+if (!require(httr)) install.packages("httr")
+if (!require(jsonlite)) install.packages("jsonlite")
+
+library(httr)
+library(jsonlite)
+
+# Set your OpenAI API key
+openai_api_key <- Sys.getenv("OPENAI_API_KEY")
+#When you are doing this for the first time, you need to do the following command: 
+#openai_api_key <- "sk-proj-"  # <- replace this with your actual OpenAI API key that you can get from their website
+
+# Define a function to summarize text via ChatGPT
+summarize_with_gpt <- function(text) {
+  # Construct the prompt
+  prompt <- paste0("Summarize the following presidential inaugural speech in one short phrase:\n\n", substr(text, 1, 3000))  # Truncate to 3k chars
+
+  # Make the API request
+  response <- POST(
+    url = "https://api.openai.com/v1/chat/completions",
+    add_headers(Authorization = paste("Bearer", openai_api_key)),
+    content_type_json(),
+    body = toJSON(list(
+      model = "gpt-3.5-turbo",
+      messages = list(list(role = "user", content = prompt)),
+      max_tokens = 50,
+      temperature = 0.7
+    ), auto_unbox = TRUE)
+  )
+
+  # Parse and return response
+  content <- content(response, as = "parsed")
+  if (!is.null(content$choices[[1]]$message$content)) {
+    return(trimws(content$choices[[1]]$message$content))
+  } else {
+    return(NA)
+  }
+}
+
+# Apply to all the data: THIS MAY HIT RATE LIMITS
+#text_data$summary <- NA  # Create empty column first
+#for (i in 1:nrow(text_data)) {
+#  cat("Summarizing speech", i, "...\n")
+#  text_data$summary[i] <- summarize_with_gpt(text_data$text[i])
+#}
+
+
+text_data$summary <- NA  # Reset or create column
+
+for (i in 1:nrow(text_data)) {
+  cat("Summarizing speech", i, "of", nrow(text_data), "...\n")
+  
+  tryCatch({
+    # Call GPT and store result
+    text_data$summary[i] <- summarize_with_gpt(text_data$text[i])
+    
+    # Wait a bit between requests (adjust if needed)
+    Sys.sleep(10)
+    
+  }, error = function(e) {
+    # If there's an error, store the message
+    message(sprintf("Error on row %d: %s", i, e$message))
+    text_data$summary[i] <- NA
+  })
+}
+
+#print the first few rows
+head(text_data)
+
+```
+
+## Now summarize the summary
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# Collapse all the summaries into one prompt
+all_summaries <- paste(text_data$summary[!is.na(text_data$summary)], collapse = "; ")
+
+# Define a new prompt for ChatGPT
+meta_prompt <- paste0(
+  "Below is a list of one-line summaries of U.S. presidential inaugural speeches:\n\n",
+  all_summaries,
+  "\n\nWrite a concise paragraph that captures the overarching themes and tone across these summaries."
+)
+
+# Make the API call
+response <- httr::POST(
+  url = "https://api.openai.com/v1/chat/completions",
+  httr::add_headers(Authorization = paste("Bearer", openai_api_key)),
+  httr::content_type_json(),
+  body = jsonlite::toJSON(list(
+    model = "gpt-3.5-turbo",
+    messages = list(list(role = "user", content = meta_prompt)),
+    max_tokens = 200,
+    temperature = 0.7
+  ), auto_unbox = TRUE)
+)
+
+# Extract the paragraph from the response
+parsed <- httr::content(response, as = "parsed")
+
+paragraph <- trimws(parsed$choices[[1]]$message$content)
+
+# View the paragraph
+cat(paragraph)
+```
