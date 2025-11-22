@@ -19,6 +19,7 @@ library(ROCR)
 library(xtable)
 library(kableExtra)
 library(ROCR)
+library(dplyr)
 
 options(scipen = 999)
 ```
@@ -34,9 +35,48 @@ head(cdc_data)
 *2.a.* Using the table and prop.table commands, tabulate the dependent variable, `DRINKING_D.`
 
 ```{r tabulate}
-DRINKING_D.tab <- table(cdc_data$DRINKING_D)
+DRINKING_D.counts <- table(cdc_data$DRINKING_D)
 
-prop.table(DRINKING_D.tab)
+DRINKING_D.proportions <- prop.table(DRINKING_D.counts)
+
+drink_summary_matrix <- rbind(
+    Count = as.numeric(DRINKING_D.counts),
+    Proportion = as.numeric(DRINKING_D.proportions)
+)
+
+colnames(drink_summary_matrix) <- c("No Alcohol", "Alcohol")
+
+formatted_counts <- format(DRINKING_D.counts, big.mark = ",")
+
+formatted_proportions <- format(round(DRINKING_D.proportions, 2), nsmall = 2)
+
+drink_summary_df <- data.frame(
+    Metric = c("<b>Count</b>", "<b>Proportion</b>"),
+    No_Alcohol = c(formatted_counts[1], formatted_proportions[1]),
+    Alcohol = c(formatted_counts[2], formatted_proportions[2]),
+    stringsAsFactors = FALSE
+)
+
+drink_summary_df <- drink_summary_df %>%
+  rename("No Alcohol" = "No_Alcohol")
+drink_summary_df
+# 4. Generate the kable table
+drink_table <- kbl(drink_summary_df,
+    caption = "Summary of Alcohol Consumption",
+    align = "c",
+    escape = FALSE
+  ) %>%
+  kable_styling(
+    bootstrap_options = "striped",
+    full_width = F
+  ) %>%
+  row_spec(0, bold = T)
+drink_table
+# Save as HTML file.
+#save_kable(drink_table, "drink_table.html", zoom = 3, self_contained = TRUE)
+
+# Then convert HTML to PNG using webshot.
+#webshot::webshot("drink_table.html", "drink_table.png")
 ```
 
 In your report, in addition to the counts that you can obtain with the table command, you will be asked to report the proportion of crashes that involved a drunk driver using the prop.table command as above.
@@ -613,13 +653,16 @@ means_of_predictors
 ```{r sensitivity specificity table 3.a.iii}
 # Find the index of the row with the minimum misclassification rate.
 best_row <- which.min(cutoff_table$Misclass)
+worst_row <- which.max(cutoff_table$Misclass)
 
 cutoff_table <- kbl(cutoff_table, 
     digits = 2,
     caption = "Sensitivity, Specificity, and Misclassification Rates") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = F) %>%
   # Bold best row.
-  row_spec(best_row, bold = TRUE, color = "black")
+  row_spec(best_row, bold = TRUE, color = "black") %>%
+  # Bold worst row.
+  row_spec(worst_row, bold = TRUE, color = "black")
 
 cutoff_table
 
