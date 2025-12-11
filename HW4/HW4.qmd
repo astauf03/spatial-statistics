@@ -12,11 +12,6 @@ Note: Need to decide among ...
 
 **Text Analysis Lecture 25-2: *Using ChatGPT for Data Analysis***
 
-**Point Pattern Analysis Lecture 21: *Point Pattern Analysis***
-
-**K-Means Clustering Lecture 22-1: *K-Means Clustering***
-
-**K-Means Clustering Lecture 22-2: *DBSCAN Clustering***
 
 ```{r library-setup}
 library(dplyr)
@@ -24,6 +19,16 @@ library(stringr)
 library(tidyverse)
 library(ggplot2)
 library(kableExtra)
+
+library(wordcloud)
+library(text)
+library(tm)
+library(SnowballC)
+library(words)
+library(NbClust)
+library(stringr)
+library(dplyr)
+library(syuzhet)
 
 options(scipen = 999)
 ```
