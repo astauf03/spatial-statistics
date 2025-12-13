@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.24">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Alex Stauffer">
+<meta name="author" content="Jun Luu">
+<meta name="author" content="Tess Vu">
+<meta name="dcterms.date" content="2025-12-13">
+
+<title>Text Mining Analysis of Reuters News Articles</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="HW4_files/libs/clipboard/clipboard.min.js"></script>
+<script src="HW4_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="HW4_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="HW4_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="HW4_files/libs/quarto-html/popper.min.js"></script>
+<script src="HW4_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="HW4_files/libs/quarto-html/anchor.min.js"></script>
+<link href="HW4_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="HW4_files/libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="HW4_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="HW4_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="HW4_files/libs/bootstrap/bootstrap-2b16cb1ea19488d2d80dabb165e63084.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="HW4_files/libs/kePrint-0.0.1/kePrint.js"></script>
+
+<link href="HW4_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#data-loading-and-corpus-creation" id="toc-data-loading-and-corpus-creation" class="nav-link active" data-scroll-target="#data-loading-and-corpus-creation">Data Loading and Corpus Creation</a></li>
+  <li><a href="#data-preprocessing-and-cleaning" id="toc-data-preprocessing-and-cleaning" class="nav-link" data-scroll-target="#data-preprocessing-and-cleaning">Data Preprocessing and Cleaning</a></li>
+  <li><a href="#term-document-matrix-creation" id="toc-term-document-matrix-creation" class="nav-link" data-scroll-target="#term-document-matrix-creation">Term Document Matrix Creation</a></li>
+  <li><a href="#word-cloud-visualization" id="toc-word-cloud-visualization" class="nav-link" data-scroll-target="#word-cloud-visualization">Word Cloud Visualization</a></li>
+  <li><a href="#sentiment-analysis" id="toc-sentiment-analysis" class="nav-link" data-scroll-target="#sentiment-analysis">Sentiment Analysis</a></li>
+  <li><a href="#text-clustering-k-means" id="toc-text-clustering-k-means" class="nav-link" data-scroll-target="#text-clustering-k-means">Text Clustering (K-Means)</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="HW4.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Text Mining Analysis of Reuters News Articles</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Authors</div>
+    <div class="quarto-title-meta-contents">
+             <p>Alex Stauffer </p>
+             <p>Jun Luu </p>
+             <p>Tess Vu </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">December 13, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load required libraries for text mining and analysis.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: Load tm and Reuters BEFORE httr to avoid content() function conflicts.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(wordcloud)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tm)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SnowballC)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(syuzhet)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(textdata)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(NbClust)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Install Reuters corpus package if needed.</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("tm.corpus.Reuters21578", repos = "http://datacube.wu.ac.at")</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tm.corpus.Reuters21578)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Set options for cleaner numeric output.</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen =</span> <span class="dv">999</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="data-loading-and-corpus-creation" class="level2">
+<h2 class="anchored" data-anchor-id="data-loading-and-corpus-creation">Data Loading and Corpus Creation</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the Reuters-21578 dataset.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"Reuters21578"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>reuters_docs <span class="ot">&lt;-</span> Reuters21578</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check the number of documents in the corpus.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>num_docs <span class="ot">&lt;-</span> <span class="fu">length</span>(reuters_docs)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Documents in Reuters corpus:"</span>, num_docs))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Documents in Reuters corpus: 21578"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For this analysis, we will work with the first 100 documents to ensure we have at least 50 entries.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This also makes the analysis more manageable computationally.</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> reuters_docs[<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify the corpus size.</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Documents for analysis:"</span>, <span class="fu">length</span>(reuters_corpus)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Documents for analysis: 100"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORTANT: Extract raw text from corpus BEFORE loading httr.</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This avoids the conflict between httr::content() and tm::content().</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># The Reuters21578 corpus stores text in the $content slot of each document.</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># First, let us inspect the structure of one document to understand how to extract text.</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"INSPECTING DOCUMENT STRUCTURE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "INSPECTING DOCUMENT STRUCTURE"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">class</span>(reuters_corpus[[<span class="dv">1</span>]]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "PlainTextDocument" "TextDocument"     </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">names</span>(reuters_corpus[[<span class="dv">1</span>]]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "content" "meta"   </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract text using the content() function from tm package (before httr masks it).</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>raw_texts_for_gpt <span class="ot">&lt;-</span> <span class="fu">character</span>(<span class="fu">length</span>(reuters_corpus))</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(reuters_corpus)) {</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Use tm::content() explicitly to get the text content.</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  text_content <span class="ot">&lt;-</span> <span class="fu">as.character</span>(reuters_corpus[[i]])</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Collapse if it is a vector of lines.</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(text_content) <span class="sc">&gt;</span> <span class="dv">1</span>) {</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    raw_texts_for_gpt[i] <span class="ot">&lt;-</span> <span class="fu">paste</span>(text_content, <span class="at">collapse =</span> <span class="st">" "</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">length</span>(text_content) <span class="sc">==</span> <span class="dv">1</span>) {</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    raw_texts_for_gpt[i] <span class="ot">&lt;-</span> text_content</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    raw_texts_for_gpt[i] <span class="ot">&lt;-</span> <span class="st">""</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify extraction worked.</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Extracted"</span>, <span class="fu">length</span>(raw_texts_for_gpt), <span class="st">"documents for GPT summarization"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Extracted 100 documents for GPT summarization"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"First document length:"</span>, <span class="fu">nchar</span>(raw_texts_for_gpt[<span class="dv">1</span>]), <span class="st">"characters"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "First document length: 2860 characters"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"First document preview:"</span>, <span class="fu">substr</span>(raw_texts_for_gpt[<span class="dv">1</span>], <span class="dv">1</span>, <span class="dv">300</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "First document preview: Showers continued throughout the week in\nthe Bahia cocoa zone, alleviating the drought since early\nJanuary and improving prospects for the coming temporao,\nalthough normal humidity levels have not been restored,\nComissaria Smith said in its weekly review.\n    The dry period means the temporao will b"</code></pre>
+</div>
+</div>
+</section>
+<section id="data-preprocessing-and-cleaning" class="level2">
+<h2 class="anchored" data-anchor-id="data-preprocessing-and-cleaning">Data Preprocessing and Cleaning</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert all text to lowercase for consistent matching.</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, <span class="fu">content_transformer</span>(tolower))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a function to replace specific characters with spaces.</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>toSpace <span class="ot">&lt;-</span> <span class="fu">content_transformer</span>(<span class="cf">function</span>(x, pattern) <span class="fu">gsub</span>(pattern, <span class="st">" "</span>, x))</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a function to remove apostrophes.</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>remApostrophe <span class="ot">&lt;-</span> <span class="fu">content_transformer</span>(<span class="cf">function</span>(x, pattern) <span class="fu">gsub</span>(pattern, <span class="st">""</span>, x))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a custom function to remove special characters.</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>toSpace <span class="ot">&lt;-</span> <span class="fu">content_transformer</span>(<span class="cf">function</span>(x, pattern) <span class="fu">gsub</span>(pattern, <span class="st">" "</span>, x))</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove special characters by replacing them with spaces.</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"@"</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"/"</span>)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"</span><span class="sc">\\</span><span class="st">]"</span>)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"</span><span class="sc">\\</span><span class="st">$"</span>)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"—"</span>)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"‐"</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"\u201C"</span>)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"\u2018"</span>)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"\u201D"</span>)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"\u2019"</span>)</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"</span><span class="sc">\\</span><span class="st">("</span>)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"</span><span class="sc">\\</span><span class="st">)"</span>)</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, toSpace, <span class="st">"-"</span>)</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove apostrophes using a custom function.</span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>remApostrophe <span class="ot">&lt;-</span> <span class="fu">content_transformer</span>(<span class="cf">function</span>(x, pattern) <span class="fu">gsub</span>(pattern, <span class="st">""</span>, x))</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, remApostrophe, <span class="st">"'"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove numbers from the corpus.</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, removeNumbers)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove punctuation from the corpus.</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, removePunctuation)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the first document after removing special characters, numbers, and punctuation.</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"PREVIEW OF FIRST DOCUMENT (AFTER REMOVING SPECIAL CHARACTERS, NUMBERS, PUNCTUATION)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "PREVIEW OF FIRST DOCUMENT (AFTER REMOVING SPECIAL CHARACTERS, NUMBERS, PUNCTUATION)"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="fu">as.character</span>(reuters_corpus[[<span class="dv">1</span>]]), <span class="at">collapse =</span> <span class="st">" "</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "showers continued throughout the week in\nthe bahia cocoa zone alleviating the drought since early\njanuary and improving prospects for the coming temporao\nalthough normal humidity levels have not been restored\ncomissaria smith said in its weekly review\n    the dry period means the temporao will be late this year\n    arrivals for the week ended february  were  bags\nof  kilos making a cumulative total for the season of \nmln against  at the same stage last year again it seems\nthat cocoa delivered earlier on consignment was included in the\narrivals figures\n    comissaria smith said there is still some doubt as to how\nmuch old crop cocoa is still available as harvesting has\npractically come to an end with total bahia crop estimates\naround  mln bags and sales standing at almost  mln there\nare a few hundred thousand bags still in the hands of farmers\nmiddlemen exporters and processors\n    there are doubts as to how much of this cocoa would be fit\nfor export as shippers are now experiencing dificulties in\nobtaining bahia superior certificates\n    in view of the lower quality over recent weeks farmers have\nsold a good part of their cocoa held on consignment\n    comissaria smith said spot bean prices rose to  to \ncruzados per arroba of  kilos\n    bean shippers were reluctant to offer nearby shipment and\nonly limited sales were booked for march shipment at  to\n dlrs per tonne to ports to be named\n    new crop sales were also light and all to open ports with\njune july going at  and  dlrs and at  and  dlrs\nunder new york july aug sept at   and  dlrs\nper tonne fob\n    routine sales of butter were made march april sold at\n  and  dlrs\n    april may butter went at  times new york may june july\nat  and  dlrs aug sept at  to  dlrs and at\n and  times new york sept and oct dec at  dlrs and\n times new york dec comissaria smith said\n    destinations were the us covertible currency areas\nuruguay and open ports\n    cake sales were registered at  to  dlrs for\nmarch april  dlrs for may  dlrs for aug and  times\nnew york dec for oct dec\n    buyers were the us argentina uruguay and convertible\ncurrency areas\n    liquor sales were limited with march april selling at \nand  dlrs june july at  dlrs and at  times new\nyork july aug sept at  dlrs and at  times new york\nsept and oct dec at  times new york dec comissaria smith\nsaid\n    total bahia sales are currently estimated at  mln bags\nagainst the   crop and  mln bags against the  \ncrop\n    final figures for the period to february  are expected to\nbe published by the brazilian cocoa trade commission after\ncarnival which ends midday on february \n reuter\n"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># View the list of English stop words that will be removed.</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"ENGLISH STOP WORDS TO BE REMOVED"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "ENGLISH STOP WORDS TO BE REMOVED"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">stopwords</span>(<span class="st">"english"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  [1] "i"          "me"         "my"         "myself"     "we"        
+  [6] "our"        "ours"       "ourselves"  "you"        "your"      
+ [11] "yours"      "yourself"   "yourselves" "he"         "him"       
+ [16] "his"        "himself"    "she"        "her"        "hers"      
+ [21] "herself"    "it"         "its"        "itself"     "they"      
+ [26] "them"       "their"      "theirs"     "themselves" "what"      
+ [31] "which"      "who"        "whom"       "this"       "that"      
+ [36] "these"      "those"      "am"         "is"         "are"       
+ [41] "was"        "were"       "be"         "been"       "being"     
+ [46] "have"       "has"        "had"        "having"     "do"        
+ [51] "does"       "did"        "doing"      "would"      "should"    
+ [56] "could"      "ought"      "i'm"        "you're"     "he's"      
+ [61] "she's"      "it's"       "we're"      "they're"    "i've"      
+ [66] "you've"     "we've"      "they've"    "i'd"        "you'd"     
+ [71] "he'd"       "she'd"      "we'd"       "they'd"     "i'll"      
+ [76] "you'll"     "he'll"      "she'll"     "we'll"      "they'll"   
+ [81] "isn't"      "aren't"     "wasn't"     "weren't"    "hasn't"    
+ [86] "haven't"    "hadn't"     "doesn't"    "don't"      "didn't"    
+ [91] "won't"      "wouldn't"   "shan't"     "shouldn't"  "can't"     
+ [96] "cannot"     "couldn't"   "mustn't"    "let's"      "that's"    
+[101] "who's"      "what's"     "here's"     "there's"    "when's"    
+[106] "where's"    "why's"      "how's"      "a"          "an"        
+[111] "the"        "and"        "but"        "if"         "or"        
+[116] "because"    "as"         "until"      "while"      "of"        
+[121] "at"         "by"         "for"        "with"       "about"     
+[126] "against"    "between"    "into"       "through"    "during"    
+[131] "before"     "after"      "above"      "below"      "to"        
+[136] "from"       "up"         "down"       "in"         "out"       
+[141] "on"         "off"        "over"       "under"      "again"     
+[146] "further"    "then"       "once"       "here"       "there"     
+[151] "when"       "where"      "why"        "how"        "all"       
+[156] "any"        "both"       "each"       "few"        "more"      
+[161] "most"       "other"      "some"       "such"       "no"        
+[166] "nor"        "not"        "only"       "own"        "same"      
+[171] "so"         "than"       "too"        "very"      </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove English stop words from the corpus.</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, removeWords, <span class="fu">stopwords</span>(<span class="st">"english"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove additional custom stop words specific to news articles.</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co"># These include common news-related terms that do not add analytical value.</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>custom_stopwords <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"said"</span>, <span class="st">"says"</span>, <span class="st">"also"</span>, <span class="st">"reuter"</span>, <span class="st">"reuters"</span>, <span class="st">"will"</span>, <span class="st">"can"</span>, <span class="st">"may"</span>, <span class="st">"one"</span>, <span class="st">"two"</span>, <span class="st">"three"</span>, <span class="st">"four"</span>, <span class="st">"five"</span>, <span class="st">"six"</span>, <span class="st">"seven"</span>, <span class="st">"eight"</span>, <span class="st">"nine"</span>, <span class="st">"ten"</span>, <span class="st">"mln"</span>, <span class="st">"dlrs"</span>, <span class="st">"pct"</span>, <span class="st">"cts"</span>, <span class="st">"year"</span>, <span class="st">"years"</span>, <span class="st">"month"</span>, <span class="st">"months"</span>, <span class="st">"week"</span>, <span class="st">"weeks"</span>, <span class="st">"day"</span>, <span class="st">"days"</span>, <span class="st">"inc"</span>, <span class="st">"corp"</span>, <span class="st">"ltd"</span>, <span class="st">"company"</span>, <span class="st">"companies"</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, removeWords, custom_stopwords)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Strip extra whitespace from the documents.</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>reuters_corpus <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, stripWhitespace)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the first document after stop word removal.</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"PREVIEW OF FIRST DOCUMENT (AFTER STOP WORD REMOVAL)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "PREVIEW OF FIRST DOCUMENT (AFTER STOP WORD REMOVAL)"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="fu">as.character</span>(reuters_corpus[[<span class="dv">1</span>]]), <span class="at">collapse =</span> <span class="st">" "</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "showers continued throughout bahia cocoa zone alleviating drought since early january improving prospects coming temporao although normal humidity levels restored comissaria smith weekly review dry period means temporao late arrivals ended february bags kilos making cumulative total season stage last seems cocoa delivered earlier consignment included arrivals figures comissaria smith still doubt much old crop cocoa still available harvesting practically come end total bahia crop estimates around bags sales standing almost hundred thousand bags still hands farmers middlemen exporters processors doubts much cocoa fit export shippers now experiencing dificulties obtaining bahia superior certificates view lower quality recent farmers sold good part cocoa held consignment comissaria smith spot bean prices rose cruzados per arroba kilos bean shippers reluctant offer nearby shipment limited sales booked march shipment per tonne ports named new crop sales light open ports june july going new york july aug sept per tonne fob routine sales butter made march april sold april butter went times new york june july aug sept times new york sept oct dec times new york dec comissaria smith destinations us covertible currency areas uruguay open ports cake sales registered march april aug times new york dec oct dec buyers us argentina uruguay convertible currency areas liquor sales limited march april selling june july times new york july aug sept times new york sept oct dec times new york dec comissaria smith total bahia sales currently estimated bags crop bags crop final figures period february expected published brazilian cocoa trade commission carnival ends midday february "</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply stemming to reduce words to their root forms.</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This helps consolidate related words like "running", "runs", "ran" to "run".</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>reuters_corpus_stemmed <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(reuters_corpus, stemDocument)</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the first document after stemming.</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"PREVIEW OF FIRST DOCUMENT (AFTER STEMMING)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "PREVIEW OF FIRST DOCUMENT (AFTER STEMMING)"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="fu">as.character</span>(reuters_corpus_stemmed[[<span class="dv">1</span>]]), <span class="at">collapse =</span> <span class="st">" "</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "shower continu throughout bahia cocoa zone allevi drought sinc earli januari improv prospect come temporao although normal humid level restor comissaria smith week review dri period mean temporao late arriv end februari bag kilo make cumul total season stage last seem cocoa deliv earlier consign includ arriv figur comissaria smith still doubt much old crop cocoa still avail harvest practic come end total bahia crop estim around bag sale stand almost hundr thousand bag still hand farmer middlemen export processor doubt much cocoa fit export shipper now experienc dificulti obtain bahia superior certif view lower qualiti recent farmer sold good part cocoa held consign comissaria smith spot bean price rose cruzado per arroba kilo bean shipper reluct offer nearbi shipment limit sale book march shipment per tonn port name new crop sale light open port june juli go new york juli aug sept per tonn fob routin sale butter made march april sold april butter went time new york june juli aug sept time new york sept oct dec time new york dec comissaria smith destin us covert currenc area uruguay open port cake sale regist march april aug time new york dec oct dec buyer us argentina uruguay convert currenc area liquor sale limit march april sell june juli time new york juli aug sept time new york sept oct dec time new york dec comissaria smith total bahia sale current estim bag crop bag crop final figur period februari expect publish brazilian cocoa trade commiss carniv end midday februari"</code></pre>
+</div>
+</div>
+</section>
+<section id="term-document-matrix-creation" class="level2">
+<h2 class="anchored" data-anchor-id="term-document-matrix-creation">Term Document Matrix Creation</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a Document Term Matrix from the cleaned corpus.</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>dtm <span class="ot">&lt;-</span> <span class="fu">DocumentTermMatrix</span>(reuters_corpus)</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect the DTM structure.</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"DOCUMENT TERM MATRIX SUMMARY"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "DOCUMENT TERM MATRIX SUMMARY"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>tm<span class="sc">::</span><span class="fu">inspect</span>(dtm)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;&lt;DocumentTermMatrix (documents: 100, terms: 2027)&gt;&gt;
+Non-/sparse entries: 3924/198776
+Sparsity           : 98%
+Maximal term length: 17
+Weighting          : term frequency (tf)
+Sample             :
+    Terms
+Docs bankamerica billion loss march net new profit share shr stock
+  1            0       0    0     4   0   9      0     0   0     0
+  16          12       2    0     0   0   0      0     0   0     5
+  18           0       2    0     0   0   0      0     4   0     0
+  26           0       3    0     1   0   4      0     0   0     0
+  28           0       0    1     0   0   0      0     0   0     0
+  4           12       2    0     0   0   0      0     0   0     5
+  45           0       0    0     1   0   0      0     3   0     1
+  54           0       0    0     0   0   3      0     0   0     0
+  61           0       2    0     0   0   0      0     0   0     5
+  79           0       0    0     0   0   9      1     0   0     2</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert the DTM to a regular matrix for further analysis.</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(dtm)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the dimensions of the matrix.</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Matrix Dimensions:"</span>, <span class="fu">nrow</span>(m), <span class="st">"documents x"</span>, <span class="fu">ncol</span>(m), <span class="st">"terms"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Matrix Dimensions: 100 documents x 2027 terms"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the total frequency of each term across all documents.</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>term_freq <span class="ot">&lt;-</span> <span class="fu">colSums</span>(m)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to a data frame for easier manipulation.</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>term_freq_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">term =</span> <span class="fu">names</span>(term_freq),</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">frequency =</span> <span class="fu">as.numeric</span>(term_freq),</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by frequency in descending order.</span></span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>term_freq_df <span class="ot">&lt;-</span> term_freq_df <span class="sc">%&gt;%</span></span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(frequency))</span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the top 20 most frequent terms.</span></span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(term_freq_df, <span class="dv">20</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          term frequency
+1      billion        50
+2          new        45
+3        share        32
+4          shr        31
+5        march        29
+6          net        29
+7        stock        29
+8       profit        25
+9  bankamerica        24
+10        loss        24
+11         per        24
+12       total        23
+13        debt        21
+14     quarter        21
+15       april        20
+16      record        20
+17        revs        20
+18       sales        20
+19     january        19
+20        last        19</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a histogram of term frequencies.</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(term_freq_df, <span class="fu">aes</span>(<span class="at">x =</span> frequency)) <span class="sc">+</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">50</span>, <span class="at">fill =</span> <span class="st">"steelblue"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_log10</span>() <span class="sc">+</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Distribution of Term Frequencies (Log Scale)"</span>,</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Term Frequency (Log Scale)"</span>,</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Number of Terms"</span></span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>)</span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/histogram-term-frequency-1.png" class="img-fluid figure-img" width="3000"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="word-cloud-visualization" class="level2">
+<h2 class="anchored" data-anchor-id="word-cloud-visualization">Word Cloud Visualization</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a basic word cloud of the most frequent terms.</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="fu">wordcloud</span>(</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">words =</span> term_freq_df<span class="sc">$</span>term,</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">freq =</span> term_freq_df<span class="sc">$</span>frequency,</span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">min.freq =</span> <span class="dv">5</span>,</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">max.words =</span> <span class="dv">150</span>,</span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">random.order =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">rot.per =</span> <span class="fl">0.35</span>,</span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">colors =</span> <span class="fu">brewer.pal</span>(<span class="dv">8</span>, <span class="st">"Dark2"</span>)</span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/wordcloud-basic-1.png" class="img-fluid figure-img" width="3000"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a more colorful word cloud with different settings.</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a><span class="fu">wordcloud</span>(</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">words =</span> term_freq_df<span class="sc">$</span>term,</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">freq =</span> term_freq_df<span class="sc">$</span>frequency,</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">min.freq =</span> <span class="dv">10</span>,</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">max.words =</span> <span class="dv">100</span>,</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">random.order =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">rot.per =</span> <span class="fl">0.25</span>,</span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">scale =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="fl">0.5</span>),</span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">colors =</span> <span class="fu">brewer.pal</span>(<span class="dv">9</span>, <span class="st">"Blues"</span>)[<span class="dv">4</span><span class="sc">:</span><span class="dv">9</span>]</span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/wordcloud-colorful-1.png" class="img-fluid figure-img" width="3000"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sentiment-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="sentiment-analysis">Sentiment Analysis</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load and preview the sentiment lexicons available in the syuzhet package.</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="co"># NRC LEXICON</span></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>nrc <span class="ot">&lt;-</span> syuzhet<span class="sc">::</span><span class="fu">get_sentiment_dictionary</span>(<span class="at">dictionary =</span> <span class="st">"nrc"</span>)</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(nrc, <span class="at">n =</span> <span class="dv">20</span>L))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      lang           word sentiment value
+1  english           abba  positive     1
+2  english        ability  positive     1
+3  english abovementioned  positive     1
+4  english       absolute  positive     1
+5  english     absolution  positive     1
+6  english       absorbed  positive     1
+7  english      abundance  positive     1
+8  english       abundant  positive     1
+9  english       academic  positive     1
+10 english        academy  positive     1
+11 english     acceptable  positive     1
+12 english     acceptance  positive     1
+13 english     accessible  positive     1
+14 english       accolade  positive     1
+15 english  accommodation  positive     1
+16 english  accompaniment  positive     1
+17 english     accomplish  positive     1
+18 english   accomplished  positive     1
+19 english accomplishment  positive     1
+20 english         accord  positive     1</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AFINN LEXICON</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>afinn <span class="ot">&lt;-</span> syuzhet<span class="sc">::</span><span class="fu">get_sentiment_dictionary</span>(<span class="at">dictionary =</span> <span class="st">"afinn"</span>)</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(afinn, <span class="at">n =</span> <span class="dv">20</span>L))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         word value
+1     abandon    -2
+2   abandoned    -2
+3    abandons    -2
+4    abducted    -2
+5   abduction    -2
+6  abductions    -2
+7       abhor    -3
+8    abhorred    -3
+9   abhorrent    -3
+10     abhors    -3
+11  abilities     2
+12    ability     2
+13     aboard     1
+14    aborted    -1
+15     aborts    -1
+16   absentee    -1
+17  absentees    -1
+18    absolve     2
+19   absolved     2
+20   absolves     2</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># BING LEXICON</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>bing <span class="ot">&lt;-</span> syuzhet<span class="sc">::</span><span class="fu">get_sentiment_dictionary</span>(<span class="at">dictionary =</span> <span class="st">"bing"</span>)</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(bing, <span class="at">n =</span> <span class="dv">20</span>L))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              word value
+1               a+     1
+2           abound     1
+3          abounds     1
+4        abundance     1
+5         abundant     1
+6       accessable     1
+7       accessible     1
+8          acclaim     1
+9        acclaimed     1
+10     acclamation     1
+11        accolade     1
+12       accolades     1
+13   accommodative     1
+14    accomodative     1
+15      accomplish     1
+16    accomplished     1
+17  accomplishment     1
+18 accomplishments     1
+19        accurate     1
+20      accurately     1</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SYUZHET LEXICON</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>syuzhet_lex <span class="ot">&lt;-</span> syuzhet<span class="sc">::</span><span class="fu">get_sentiment_dictionary</span>(<span class="at">dictionary =</span> <span class="st">"syuzhet"</span>)</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(syuzhet_lex, <span class="at">n =</span> <span class="dv">20</span>L))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          word value
+1      abandon -0.75
+2    abandoned -0.50
+3    abandoner -0.25
+4  abandonment -0.25
+5     abandons -1.00
+6     abducted -1.00
+7    abduction -0.50
+8   abductions -1.00
+9     aberrant -0.60
+10  aberration -0.80
+11       abhor -0.50
+12    abhorred -1.00
+13   abhorrent -0.50
+14      abhors -1.00
+15   abilities  0.60
+16     ability  0.50
+17      abject -1.00
+18      ablaze -0.25
+19    abnormal -0.50
+20      aboard  0.25</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Demonstrate the NRC lexicon with example words.</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="co"># NRC Sentiment for "profit".</span></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">get_nrc_sentiment</span>(<span class="st">"profit"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  anger anticipation disgust fear joy sadness surprise trust negative positive
+1     0            0       0    0   0       0        0     0        0        0</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="co"># NRC Sentiment for "loss".</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">get_nrc_sentiment</span>(<span class="st">"loss"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  anger anticipation disgust fear joy sadness surprise trust negative positive
+1     1            0       0    1   0       1        0     0        1        0</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="co"># NRC Sentiment for "crisis".</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">get_nrc_sentiment</span>(<span class="st">"crisis"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  anger anticipation disgust fear joy sadness surprise trust negative positive
+1     0            0       0    0   0       0        0     0        1        0</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare the term frequency data for sentiment analysis.</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>sentiment_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">term =</span> term_freq_df<span class="sc">$</span>term,</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">term_frequency =</span> term_freq_df<span class="sc">$</span>frequency,</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get NRC sentiment scores for all terms in the corpus.</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>nrc_sentiment <span class="ot">&lt;-</span> <span class="fu">get_nrc_sentiment</span>(sentiment_df<span class="sc">$</span>term)</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine the sentiment scores with the term data.</span></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>sentiment_combined <span class="ot">&lt;-</span> <span class="fu">cbind</span>(sentiment_df, nrc_sentiment)</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the combined data.</span></span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(sentiment_combined, <span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          term term_frequency anger anticipation disgust fear joy sadness
+1      billion             50     0            0       0    0   0       0
+2          new             45     0            0       0    0   0       0
+3        share             32     0            1       0    0   1       0
+4          shr             31     0            0       0    0   0       0
+5        march             29     0            0       0    0   0       0
+6          net             29     0            0       0    0   0       0
+7        stock             29     0            0       0    0   0       0
+8       profit             25     0            0       0    0   0       0
+9  bankamerica             24     0            0       0    0   0       0
+10        loss             24     1            0       0    1   0       1
+   surprise trust negative positive
+1         0     0        0        0
+2         0     0        0        0
+3         0     1        0        1
+4         0     0        0        0
+5         0     0        0        1
+6         0     0        0        0
+7         0     0        0        0
+8         0     0        0        0
+9         0     0        0        0
+10        0     0        1        0</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiply sentiment scores by term frequency to get weighted sentiment.</span></span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>sentiment_cols <span class="ot">&lt;-</span> <span class="fu">names</span>(nrc_sentiment)</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a copy for weighted calculations.</span></span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>sentiment_weighted <span class="ot">&lt;-</span> sentiment_combined</span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Weight each sentiment column by term frequency.</span></span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (col <span class="cf">in</span> sentiment_cols) {</span>
+<span id="cb69-9"><a href="#cb69-9" aria-hidden="true" tabindex="-1"></a>  sentiment_weighted[[col]] <span class="ot">&lt;-</span> sentiment_weighted[[col]] <span class="sc">*</span> sentiment_weighted<span class="sc">$</span>term_frequency</span>
+<span id="cb69-10"><a href="#cb69-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-11"><a href="#cb69-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-12"><a href="#cb69-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the weighted data.</span></span>
+<span id="cb69-13"><a href="#cb69-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(sentiment_weighted, <span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          term term_frequency anger anticipation disgust fear joy sadness
+1      billion             50     0            0       0    0   0       0
+2          new             45     0            0       0    0   0       0
+3        share             32     0           32       0    0  32       0
+4          shr             31     0            0       0    0   0       0
+5        march             29     0            0       0    0   0       0
+6          net             29     0            0       0    0   0       0
+7        stock             29     0            0       0    0   0       0
+8       profit             25     0            0       0    0   0       0
+9  bankamerica             24     0            0       0    0   0       0
+10        loss             24    24            0       0   24   0      24
+   surprise trust negative positive
+1         0     0        0        0
+2         0     0        0        0
+3         0    32        0       32
+4         0     0        0        0
+5         0     0        0       29
+6         0     0        0        0
+7         0     0        0        0
+8         0     0        0        0
+9         0     0        0        0
+10        0     0       24        0</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate total sentiment across all terms.</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>sentiment_totals <span class="ot">&lt;-</span> <span class="fu">colSums</span>(sentiment_weighted[, sentiment_cols])</span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a data frame for plotting.</span></span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>sentiment_totals_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">sentiment =</span> <span class="fu">names</span>(sentiment_totals),</span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">count =</span> <span class="fu">as.numeric</span>(sentiment_totals),</span>
+<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb71-9"><a href="#cb71-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb71-10"><a href="#cb71-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-11"><a href="#cb71-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a bar plot of sentiment totals.</span></span>
+<span id="cb71-12"><a href="#cb71-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(sentiment_totals_df, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(sentiment, <span class="sc">-</span>count), <span class="at">y =</span> count, <span class="at">fill =</span> sentiment)) <span class="sc">+</span></span>
+<span id="cb71-13"><a href="#cb71-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb71-14"><a href="#cb71-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set3"</span>) <span class="sc">+</span></span>
+<span id="cb71-15"><a href="#cb71-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb71-16"><a href="#cb71-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Total Sentiment Scores in Reuters Corpus (NRC Lexicon)"</span>,</span>
+<span id="cb71-17"><a href="#cb71-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Sentiment Category"</span>,</span>
+<span id="cb71-18"><a href="#cb71-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Weighted Count"</span></span>
+<span id="cb71-19"><a href="#cb71-19" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb71-20"><a href="#cb71-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb71-21"><a href="#cb71-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb71-22"><a href="#cb71-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb71-23"><a href="#cb71-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">size =</span> <span class="dv">10</span>),</span>
+<span id="cb71-24"><a href="#cb71-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span></span>
+<span id="cb71-25"><a href="#cb71-25" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/total-sentiment-barplot-1.png" class="img-fluid figure-img" width="3600"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare sentiment scores across different lexicons.</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>sentiment_df<span class="sc">$</span>syuzhet_score <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">get_sentiment</span>(sentiment_df<span class="sc">$</span>term, <span class="at">method =</span> <span class="st">"syuzhet"</span>))</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>sentiment_df<span class="sc">$</span>bing_score <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">get_sentiment</span>(sentiment_df<span class="sc">$</span>term, <span class="at">method =</span> <span class="st">"bing"</span>))</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>sentiment_df<span class="sc">$</span>afinn_score <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">get_sentiment</span>(sentiment_df<span class="sc">$</span>term, <span class="at">method =</span> <span class="st">"afinn"</span>))</span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>sentiment_df<span class="sc">$</span>nrc_score <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">get_sentiment</span>(sentiment_df<span class="sc">$</span>term, <span class="at">method =</span> <span class="st">"nrc"</span>))</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the multi-lexicon sentiment data.</span></span>
+<span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(sentiment_df, <span class="dv">20</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          term term_frequency syuzhet_score bing_score afinn_score nrc_score
+1      billion             50          0.00          0           0         0
+2          new             45          0.80          0           0         0
+3        share             32          0.50          0           1         1
+4          shr             31          0.00          0           0         0
+5        march             29          0.00          0           0         1
+6          net             29          0.00          0           0         0
+7        stock             29          0.00          0           0         0
+8       profit             25          0.00          0           2         0
+9  bankamerica             24          0.00          0           0         0
+10        loss             24         -0.75         -1          -3        -1
+11         per             24          0.00          0           0         0
+12       total             23          0.00          0           0         0
+13        debt             21         -0.75         -1          -2        -1
+14     quarter             21          0.00          0           0         0
+15       april             20          0.00          0           0         0
+16      record             20          0.00          0           0         0
+17        revs             20          0.00          0           0         0
+18       sales             20          0.00          0           0         0
+19     january             19          0.00          0           0         0
+20        last             19          0.00          0           0         0</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create histograms comparing sentiment distributions across lexicons.</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sentiment_df<span class="sc">$</span>syuzhet_score, <span class="at">breaks =</span> <span class="dv">30</span>, <span class="at">col =</span> <span class="st">"lightblue"</span>, <span class="at">main =</span> <span class="st">"Syuzhet Lexicon Scores"</span>, <span class="at">xlab =</span> <span class="st">"Sentiment Score"</span>)</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sentiment_df<span class="sc">$</span>bing_score, <span class="at">breaks =</span> <span class="dv">30</span>, <span class="at">col =</span> <span class="st">"lightgreen"</span>, <span class="at">main =</span> <span class="st">"Bing Lexicon Scores"</span>, <span class="at">xlab =</span> <span class="st">"Sentiment Score"</span>)</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sentiment_df<span class="sc">$</span>afinn_score, <span class="at">breaks =</span> <span class="dv">30</span>, <span class="at">col =</span> <span class="st">"lightyellow"</span>, <span class="at">main =</span> <span class="st">"AFINN Lexicon Scores"</span>, <span class="at">xlab =</span> <span class="st">"Sentiment Score"</span>)</span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sentiment_df<span class="sc">$</span>nrc_score, <span class="at">breaks =</span> <span class="dv">30</span>, <span class="at">col =</span> <span class="st">"lightpink"</span>, <span class="at">main =</span> <span class="st">"NRC Lexicon Scores"</span>, <span class="at">xlab =</span> <span class="st">"Sentiment Score"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/lexicon-histograms-1.png" class="img-fluid figure-img" width="3600"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Classify terms as positive, neutral, or negative for each lexicon.</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>sentiment_classified <span class="ot">&lt;-</span> sentiment_df <span class="sc">%&gt;%</span></span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">syuzhet_class =</span> <span class="fu">sign</span>(syuzhet_score),</span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">bing_class =</span> <span class="fu">sign</span>(bing_score),</span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">afinn_class =</span> <span class="fu">sign</span>(afinn_score),</span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrc_class =</span> <span class="fu">sign</span>(nrc_score)</span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">syuzhet_class =</span> <span class="fu">factor</span>(syuzhet_class, <span class="at">levels =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Negative"</span>, <span class="st">"Neutral"</span>, <span class="st">"Positive"</span>)),</span>
+<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">bing_class =</span> <span class="fu">factor</span>(bing_class, <span class="at">levels =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Negative"</span>, <span class="st">"Neutral"</span>, <span class="st">"Positive"</span>)),</span>
+<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">afinn_class =</span> <span class="fu">factor</span>(afinn_class, <span class="at">levels =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Negative"</span>, <span class="st">"Neutral"</span>, <span class="st">"Positive"</span>)),</span>
+<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrc_class =</span> <span class="fu">factor</span>(nrc_class, <span class="at">levels =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Negative"</span>, <span class="st">"Neutral"</span>, <span class="st">"Positive"</span>))</span>
+<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb76-15"><a href="#cb76-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-16"><a href="#cb76-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate proportions for each lexicon.</span></span>
+<span id="cb76-17"><a href="#cb76-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"SENTIMENT CLASSIFICATION BY LEXICON"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "SENTIMENT CLASSIFICATION BY LEXICON"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Syuzhet Lexicon:"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Syuzhet Lexicon:"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">prop.table</span>(<span class="fu">table</span>(sentiment_classified<span class="sc">$</span>syuzhet_class)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  Negative    Neutral   Positive 
+0.07696103 0.80414406 0.11889492 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Bing Lexicon:"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Bing Lexicon:"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">prop.table</span>(<span class="fu">table</span>(sentiment_classified<span class="sc">$</span>bing_class)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  Negative    Neutral   Positive 
+0.04390725 0.91169216 0.04440059 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"AFINN Lexicon:"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "AFINN Lexicon:"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">prop.table</span>(<span class="fu">table</span>(sentiment_classified<span class="sc">$</span>afinn_class)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  Negative    Neutral   Positive 
+0.03946719 0.90823878 0.05229403 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"NRC Lexicon:"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "NRC Lexicon:"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">prop.table</span>(<span class="fu">table</span>(sentiment_classified<span class="sc">$</span>nrc_class)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  Negative    Neutral   Positive 
+0.05081401 0.86137148 0.08781450 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a summary table comparing lexicon results.</span></span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>lexicon_summary <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Lexicon =</span> <span class="fu">c</span>(<span class="st">"Syuzhet"</span>, <span class="st">"Bing"</span>, <span class="st">"AFINN"</span>, <span class="st">"NRC"</span>),</span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Negative_Pct =</span> <span class="fu">c</span>(</span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>syuzhet_class <span class="sc">==</span> <span class="st">"Negative"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-6"><a href="#cb94-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>bing_class <span class="sc">==</span> <span class="st">"Negative"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-7"><a href="#cb94-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>afinn_class <span class="sc">==</span> <span class="st">"Negative"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-8"><a href="#cb94-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>nrc_class <span class="sc">==</span> <span class="st">"Negative"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb94-9"><a href="#cb94-9" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb94-10"><a href="#cb94-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">Neutral_Pct =</span> <span class="fu">c</span>(</span>
+<span id="cb94-11"><a href="#cb94-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>syuzhet_class <span class="sc">==</span> <span class="st">"Neutral"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-12"><a href="#cb94-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>bing_class <span class="sc">==</span> <span class="st">"Neutral"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-13"><a href="#cb94-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>afinn_class <span class="sc">==</span> <span class="st">"Neutral"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-14"><a href="#cb94-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>nrc_class <span class="sc">==</span> <span class="st">"Neutral"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb94-15"><a href="#cb94-15" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb94-16"><a href="#cb94-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">Positive_Pct =</span> <span class="fu">c</span>(</span>
+<span id="cb94-17"><a href="#cb94-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>syuzhet_class <span class="sc">==</span> <span class="st">"Positive"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-18"><a href="#cb94-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>bing_class <span class="sc">==</span> <span class="st">"Positive"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-19"><a href="#cb94-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>afinn_class <span class="sc">==</span> <span class="st">"Positive"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb94-20"><a href="#cb94-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(sentiment_classified<span class="sc">$</span>nrc_class <span class="sc">==</span> <span class="st">"Positive"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">nrow</span>(sentiment_classified) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb94-21"><a href="#cb94-21" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb94-22"><a href="#cb94-22" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb94-23"><a href="#cb94-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-24"><a href="#cb94-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Round the percentages.</span></span>
+<span id="cb94-25"><a href="#cb94-25" aria-hidden="true" tabindex="-1"></a>lexicon_summary<span class="sc">$</span>Negative_Pct <span class="ot">&lt;-</span> <span class="fu">round</span>(lexicon_summary<span class="sc">$</span>Negative_Pct, <span class="dv">2</span>)</span>
+<span id="cb94-26"><a href="#cb94-26" aria-hidden="true" tabindex="-1"></a>lexicon_summary<span class="sc">$</span>Neutral_Pct <span class="ot">&lt;-</span> <span class="fu">round</span>(lexicon_summary<span class="sc">$</span>Neutral_Pct, <span class="dv">2</span>)</span>
+<span id="cb94-27"><a href="#cb94-27" aria-hidden="true" tabindex="-1"></a>lexicon_summary<span class="sc">$</span>Positive_Pct <span class="ot">&lt;-</span> <span class="fu">round</span>(lexicon_summary<span class="sc">$</span>Positive_Pct, <span class="dv">2</span>)</span>
+<span id="cb94-28"><a href="#cb94-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-29"><a href="#cb94-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Display as a formatted table.</span></span>
+<span id="cb94-30"><a href="#cb94-30" aria-hidden="true" tabindex="-1"></a>lexicon_summary <span class="sc">%&gt;%</span></span>
+<span id="cb94-31"><a href="#cb94-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Lexicon"</span>, <span class="st">"Negative (%)"</span>, <span class="st">"Neutral (%)"</span>, <span class="st">"Positive (%)"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb94-32"><a href="#cb94-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"striped"</span>, <span class="st">"hover"</span>, <span class="st">"condensed"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Lexicon</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Negative (%)</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Neutral (%)</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Positive (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Syuzhet</td>
+<td style="text-align: right;">7.70</td>
+<td style="text-align: right;">80.41</td>
+<td style="text-align: right;">11.89</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Bing</td>
+<td style="text-align: right;">4.39</td>
+<td style="text-align: right;">91.17</td>
+<td style="text-align: right;">4.44</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AFINN</td>
+<td style="text-align: right;">3.95</td>
+<td style="text-align: right;">90.82</td>
+<td style="text-align: right;">5.23</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NRC</td>
+<td style="text-align: right;">5.08</td>
+<td style="text-align: right;">86.14</td>
+<td style="text-align: right;">8.78</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify the most positive and most negative terms.</span></span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>top_positive <span class="ot">&lt;-</span> sentiment_df <span class="sc">%&gt;%</span></span>
+<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(afinn_score <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(afinn_score <span class="sc">*</span> term_frequency)) <span class="sc">%&gt;%</span></span>
+<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>)</span>
+<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(top_positive[, <span class="fu">c</span>(<span class="st">"term"</span>, <span class="st">"term_frequency"</span>, <span class="st">"afinn_score"</span>)])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          term term_frequency afinn_score
+1       profit             25           2
+2        share             32           1
+3  outstanding              4           5
+4       shares             18           1
+5     approval              9           2
+6       growth              9           2
+7     interest             15           1
+8         rose             12           1
+9       assets              6           2
+10        ease              5           2</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>top_negative <span class="ot">&lt;-</span> sentiment_df <span class="sc">%&gt;%</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(afinn_score <span class="sc">&lt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(afinn_score <span class="sc">*</span> term_frequency) <span class="sc">%&gt;%</span></span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>)</span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(top_negative[, <span class="fu">c</span>(<span class="st">"term"</span>, <span class="st">"term_frequency"</span>, <span class="st">"afinn_score"</span>)])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        term term_frequency afinn_score
+1       loss             24          -3
+2       debt             21          -2
+3     losses              4          -3
+4       drop              9          -1
+5        pay              7          -1
+6      avoid              6          -1
+7    falling              6          -1
+8      waste              6          -1
+9  criticism              3          -2
+10 depressed              3          -2</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate document-level sentiment scores.</span></span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract text from the cleaned corpus using tm::content() explicitly.</span></span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a>doc_texts <span class="ot">&lt;-</span> <span class="fu">character</span>(<span class="fu">length</span>(reuters_corpus))</span>
+<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(reuters_corpus)) {</span>
+<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a>  text_content <span class="ot">&lt;-</span> <span class="fu">as.character</span>(reuters_corpus[[i]])</span>
+<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(text_content) <span class="sc">&gt;</span> <span class="dv">1</span>) {</span>
+<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a>    doc_texts[i] <span class="ot">&lt;-</span> <span class="fu">paste</span>(text_content, <span class="at">collapse =</span> <span class="st">" "</span>)</span>
+<span id="cb99-8"><a href="#cb99-8" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">length</span>(text_content) <span class="sc">==</span> <span class="dv">1</span>) {</span>
+<span id="cb99-9"><a href="#cb99-9" aria-hidden="true" tabindex="-1"></a>    doc_texts[i] <span class="ot">&lt;-</span> text_content</span>
+<span id="cb99-10"><a href="#cb99-10" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb99-11"><a href="#cb99-11" aria-hidden="true" tabindex="-1"></a>    doc_texts[i] <span class="ot">&lt;-</span> <span class="st">""</span></span>
+<span id="cb99-12"><a href="#cb99-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb99-13"><a href="#cb99-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb99-14"><a href="#cb99-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb99-15"><a href="#cb99-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate sentiment for each document using different methods.</span></span>
+<span id="cb99-16"><a href="#cb99-16" aria-hidden="true" tabindex="-1"></a>doc_sentiment <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb99-17"><a href="#cb99-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">doc_id =</span> <span class="fu">seq_along</span>(doc_texts),</span>
+<span id="cb99-18"><a href="#cb99-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">syuzhet =</span> <span class="fu">sapply</span>(doc_texts, <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">get_sentiment</span>(x, <span class="at">method =</span> <span class="st">"syuzhet"</span>))),</span>
+<span id="cb99-19"><a href="#cb99-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">bing =</span> <span class="fu">sapply</span>(doc_texts, <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">get_sentiment</span>(x, <span class="at">method =</span> <span class="st">"bing"</span>))),</span>
+<span id="cb99-20"><a href="#cb99-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">afinn =</span> <span class="fu">sapply</span>(doc_texts, <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">get_sentiment</span>(x, <span class="at">method =</span> <span class="st">"afinn"</span>))),</span>
+<span id="cb99-21"><a href="#cb99-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrc =</span> <span class="fu">sapply</span>(doc_texts, <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">get_sentiment</span>(x, <span class="at">method =</span> <span class="st">"nrc"</span>)))</span>
+<span id="cb99-22"><a href="#cb99-22" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb99-23"><a href="#cb99-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb99-24"><a href="#cb99-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview document sentiment.</span></span>
+<span id="cb99-25"><a href="#cb99-25" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(doc_sentiment, <span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   doc_id syuzhet bing afinn nrc
+1       1    3.60    0    10   1
+2       2    1.40   -1     0   3
+3       3    1.10    0     2   3
+4       4   -0.75   -9   -10  -2
+5       5    2.00    1     0   3
+6       6   -0.50   -1     0   0
+7       7    0.50    0     0   3
+8       8   -0.15    0    -4  -1
+9       9    2.70    1     8   3
+10     10    8.20    4    13   7</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot document sentiment distribution.</span></span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(doc_sentiment, <span class="fu">aes</span>(<span class="at">x =</span> doc_id, <span class="at">y =</span> afinn)) <span class="sc">+</span></span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>, <span class="at">fill =</span> <span class="fu">ifelse</span>(doc_sentiment<span class="sc">$</span>afinn <span class="sc">&gt;=</span> <span class="dv">0</span>, <span class="st">"steelblue"</span>, <span class="st">"coral"</span>)) <span class="sc">+</span></span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Document-Level Sentiment Scores (AFINN Lexicon)"</span>,</span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Document ID"</span>,</span>
+<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Sentiment Score"</span></span>
+<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb101-10"><a href="#cb101-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb101-11"><a href="#cb101-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb101-12"><a href="#cb101-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>)</span>
+<span id="cb101-13"><a href="#cb101-13" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/document-level-sentiment-1.png" class="img-fluid figure-img" width="3600"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="text-clustering-k-means" class="level2">
+<h2 class="anchored" data-anchor-id="text-clustering-k-means">Text Clustering (K-Means)</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># To make clustering feasible, we need to remove sparse (infrequently occurring) terms.</span></span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This keeps only terms that appear in at least a certain percentage of documents.</span></span>
+<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Using 0.99 sparsity means we keep terms that appear in at least 1% of documents.</span></span>
+<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a>dtm_cluster <span class="ot">&lt;-</span> <span class="fu">removeSparseTerms</span>(dtm, <span class="fl">0.99</span>)</span>
+<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert the cleaned DTM to a matrix.</span></span>
+<span id="cb102-7"><a href="#cb102-7" aria-hidden="true" tabindex="-1"></a>m_cluster <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(dtm_cluster)</span>
+<span id="cb102-8"><a href="#cb102-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb102-9"><a href="#cb102-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Cleaned Matrix Dimensions:"</span>, <span class="fu">nrow</span>(m_cluster), <span class="st">"documents x"</span>, <span class="fu">ncol</span>(m_cluster), <span class="st">"terms"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Cleaned Matrix Dimensions: 100 documents x 759 terms"</code></pre>
+</div>
+</div>
+<p>s</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare the data for clustering analysis.</span></span>
+<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For sparse text data, NbClust often fails due to matrix singularity issues.</span></span>
+<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Instead, we use the elbow method (within-cluster sum of squares) to find optimal k.</span></span>
+<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove columns that have zero variance (constant values cause issues for clustering).</span></span>
+<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a>col_variances <span class="ot">&lt;-</span> <span class="fu">apply</span>(m_cluster, <span class="dv">2</span>, var)</span>
+<span id="cb104-7"><a href="#cb104-7" aria-hidden="true" tabindex="-1"></a>m_cluster_clean <span class="ot">&lt;-</span> m_cluster[, col_variances <span class="sc">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb104-8"><a href="#cb104-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-9"><a href="#cb104-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Matrix dimensions after removing zero-variance columns:"</span>, <span class="fu">nrow</span>(m_cluster_clean), <span class="st">"x"</span>, <span class="fu">ncol</span>(m_cluster_clean)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Matrix dimensions after removing zero-variance columns: 100 x 759"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For very sparse matrices, we can also remove very rare terms to improve clustering.</span></span>
+<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep only terms that appear in at least 5% of documents.</span></span>
+<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a>term_doc_freq <span class="ot">&lt;-</span> <span class="fu">colSums</span>(m_cluster_clean <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">/</span> <span class="fu">nrow</span>(m_cluster_clean)</span>
+<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a>m_cluster_reduced <span class="ot">&lt;-</span> m_cluster_clean[, term_doc_freq <span class="sc">&gt;=</span> <span class="fl">0.05</span>]</span>
+<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-6"><a href="#cb106-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Matrix dimensions after filtering rare terms:"</span>, <span class="fu">nrow</span>(m_cluster_reduced), <span class="st">"x"</span>, <span class="fu">ncol</span>(m_cluster_reduced)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Matrix dimensions after filtering rare terms: 100 x 147"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the Elbow Method to determine optimal number of clusters.</span></span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate within-cluster sum of squares for k = 1 to 10.</span></span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>wss <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">10</span>)</span>
+<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb108-7"><a href="#cb108-7" aria-hidden="true" tabindex="-1"></a>  kmeans_temp <span class="ot">&lt;-</span> <span class="fu">kmeans</span>(m_cluster_reduced, <span class="at">centers =</span> k, <span class="at">nstart =</span> <span class="dv">25</span>, <span class="at">iter.max =</span> <span class="dv">100</span>)</span>
+<span id="cb108-8"><a href="#cb108-8" aria-hidden="true" tabindex="-1"></a>  wss[k] <span class="ot">&lt;-</span> kmeans_temp<span class="sc">$</span>tot.withinss</span>
+<span id="cb108-9"><a href="#cb108-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb108-10"><a href="#cb108-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb108-11"><a href="#cb108-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a data frame for plotting.</span></span>
+<span id="cb108-12"><a href="#cb108-12" aria-hidden="true" tabindex="-1"></a>elbow_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb108-13"><a href="#cb108-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,</span>
+<span id="cb108-14"><a href="#cb108-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">wss =</span> wss</span>
+<span id="cb108-15"><a href="#cb108-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb108-16"><a href="#cb108-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb108-17"><a href="#cb108-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the elbow curve.</span></span>
+<span id="cb108-18"><a href="#cb108-18" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(elbow_df, <span class="fu">aes</span>(<span class="at">x =</span> k, <span class="at">y =</span> wss)) <span class="sc">+</span></span>
+<span id="cb108-19"><a href="#cb108-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb108-20"><a href="#cb108-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb108-21"><a href="#cb108-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) <span class="sc">+</span></span>
+<span id="cb108-22"><a href="#cb108-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb108-23"><a href="#cb108-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Elbow Method for Optimal Number of Clusters"</span>,</span>
+<span id="cb108-24"><a href="#cb108-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Number of Clusters (k)"</span>,</span>
+<span id="cb108-25"><a href="#cb108-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Within-Cluster Sum of Squares"</span></span>
+<span id="cb108-26"><a href="#cb108-26" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb108-27"><a href="#cb108-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb108-28"><a href="#cb108-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb108-29"><a href="#cb108-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>)</span>
+<span id="cb108-30"><a href="#cb108-30" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/nbclust-analysis-1.png" class="img-fluid figure-img" width="3000"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the WSS values.</span></span>
+<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"WITHIN-CLUSTER SUM OF SQUARES BY K"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "WITHIN-CLUSTER SUM OF SQUARES BY K"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(elbow_df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    k      wss
+1   1 3557.660
+2   2 3159.041
+3   3 2832.833
+4   4 2590.662
+5   5 2404.822
+6   6 2224.108
+7   7 2082.423
+8   8 1936.641
+9   9 1808.726
+10 10 1681.359</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Based on the elbow plot, select the optimal k.</span></span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Typically, we look for the "elbow" where the rate of decrease sharply changes.</span></span>
+<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a><span class="co"># For text data, k = 3 or k = 4 is often a good choice.</span></span>
+<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run k-means on the reduced matrix (with filtered rare terms).</span></span>
+<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a>kmeans_result <span class="ot">&lt;-</span> <span class="fu">kmeans</span>(m_cluster_reduced, <span class="at">centers =</span> k, <span class="at">nstart =</span> <span class="dv">25</span>, <span class="at">iter.max =</span> <span class="dv">100</span>)</span>
+<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a data frame with document IDs and their cluster assignments.</span></span>
+<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a>cluster_assignments <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb113-12"><a href="#cb113-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">doc_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(m_cluster_reduced),</span>
+<span id="cb113-13"><a href="#cb113-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster =</span> kmeans_result<span class="sc">$</span>cluster</span>
+<span id="cb113-14"><a href="#cb113-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb113-15"><a href="#cb113-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb113-16"><a href="#cb113-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the size of each cluster.</span></span>
+<span id="cb113-17"><a href="#cb113-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"CLUSTER SIZES"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "CLUSTER SIZES"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(kmeans_result<span class="sc">$</span>cluster))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ 1  2  3  4 
+ 2  5  2 91 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Display clustering quality metrics.</span></span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Total Within-Cluster Sum of Squares:"</span>, <span class="fu">round</span>(kmeans_result<span class="sc">$</span>tot.withinss, <span class="dv">2</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Total Within-Cluster Sum of Squares: 2590.66"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Between-Cluster Sum of Squares:"</span>, <span class="fu">round</span>(kmeans_result<span class="sc">$</span>betweenss, <span class="dv">2</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Between-Cluster Sum of Squares: 967"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"BSS/TSS Ratio:"</span>, <span class="fu">round</span>(kmeans_result<span class="sc">$</span>betweenss <span class="sc">/</span> kmeans_result<span class="sc">$</span>totss <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>), <span class="st">"%"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "BSS/TSS Ratio: 27.18 %"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the cluster centers (each row is a cluster, each column is a term).</span></span>
+<span id="cb124-2"><a href="#cb124-2" aria-hidden="true" tabindex="-1"></a>cluster_centers <span class="ot">&lt;-</span> kmeans_result<span class="sc">$</span>centers</span>
+<span id="cb124-3"><a href="#cb124-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-4"><a href="#cb124-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a data frame of cluster centers with term names.</span></span>
+<span id="cb124-5"><a href="#cb124-5" aria-hidden="true" tabindex="-1"></a>cluster_centers_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(cluster_centers)</span>
+<span id="cb124-6"><a href="#cb124-6" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(cluster_centers_df) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(m_cluster_reduced)</span>
+<span id="cb124-7"><a href="#cb124-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-8"><a href="#cb124-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a function to get top terms for each cluster.</span></span>
+<span id="cb124-9"><a href="#cb124-9" aria-hidden="true" tabindex="-1"></a>get_top_terms <span class="ot">&lt;-</span> <span class="cf">function</span>(cluster_center, term_names, <span class="at">n =</span> <span class="dv">10</span>) {</span>
+<span id="cb124-10"><a href="#cb124-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Sort terms by their center value (importance in the cluster).</span></span>
+<span id="cb124-11"><a href="#cb124-11" aria-hidden="true" tabindex="-1"></a>  sorted_indices <span class="ot">&lt;-</span> <span class="fu">order</span>(cluster_center, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb124-12"><a href="#cb124-12" aria-hidden="true" tabindex="-1"></a>  top_indices <span class="ot">&lt;-</span> sorted_indices[<span class="dv">1</span><span class="sc">:</span>n]</span>
+<span id="cb124-13"><a href="#cb124-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb124-14"><a href="#cb124-14" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb124-15"><a href="#cb124-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">Term =</span> term_names[top_indices],</span>
+<span id="cb124-16"><a href="#cb124-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">Prominence =</span> <span class="fu">round</span>(cluster_center[top_indices], <span class="dv">3</span>)</span>
+<span id="cb124-17"><a href="#cb124-17" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb124-18"><a href="#cb124-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(result)</span>
+<span id="cb124-19"><a href="#cb124-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb124-20"><a href="#cb124-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-21"><a href="#cb124-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Get top 10 terms for each cluster.</span></span>
+<span id="cb124-22"><a href="#cb124-22" aria-hidden="true" tabindex="-1"></a>term_names <span class="ot">&lt;-</span> <span class="fu">colnames</span>(cluster_centers_df)</span>
+<span id="cb124-23"><a href="#cb124-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-24"><a href="#cb124-24" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>k) {</span>
+<span id="cb124-25"><a href="#cb124-25" aria-hidden="true" tabindex="-1"></a>  top_terms <span class="ot">&lt;-</span> <span class="fu">get_top_terms</span>(<span class="fu">as.numeric</span>(cluster_centers_df[i, ]), term_names, <span class="at">n =</span> <span class="dv">10</span>)</span>
+<span id="cb124-26"><a href="#cb124-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(top_terms)</span>
+<span id="cb124-27"><a href="#cb124-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb124-28"><a href="#cb124-28" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          Term Prominence
+1          new        9.0
+2         york        5.0
+3        times        4.0
+4        sales        3.5
+5        april        2.0
+6        march        2.0
+7       market        2.0
+8        total        2.0
+9       weekly        2.0
+10 acquisition        1.5
+
+     Term Prominence
+1  profit        4.6
+2    loss        4.0
+3     shr        2.4
+4     net        2.2
+5    revs        1.6
+6    note        0.8
+7     avg        0.6
+8   prior        0.6
+9    shrs        0.6
+10 annual        0.4
+
+       Term Prominence
+1  analysts          6
+2      debt          6
+3     stock          5
+4    brazil          3
+5  interest          3
+6    market          3
+7     offer          3
+8  offering          3
+9  approval          2
+10    banks          2
+
+      Term Prominence
+1  billion      0.505
+2    share      0.330
+3      new      0.297
+4    march      0.253
+5      per      0.220
+6      shr      0.209
+7    total      0.209
+8      net      0.198
+9   record      0.198
+10  shares      0.198</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a bar plot showing cluster sizes.</span></span>
+<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a>cluster_size_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Cluster =</span> <span class="fu">factor</span>(<span class="dv">1</span><span class="sc">:</span>k),</span>
+<span id="cb126-4"><a href="#cb126-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Size =</span> <span class="fu">as.numeric</span>(<span class="fu">table</span>(kmeans_result<span class="sc">$</span>cluster))</span>
+<span id="cb126-5"><a href="#cb126-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb126-6"><a href="#cb126-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-7"><a href="#cb126-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(cluster_size_df, <span class="fu">aes</span>(<span class="at">x =</span> Cluster, <span class="at">y =</span> Size, <span class="at">fill =</span> Cluster)) <span class="sc">+</span></span>
+<span id="cb126-8"><a href="#cb126-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb126-9"><a href="#cb126-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> Size), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb126-10"><a href="#cb126-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set2"</span>) <span class="sc">+</span></span>
+<span id="cb126-11"><a href="#cb126-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb126-12"><a href="#cb126-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Document Distribution Across K-Means Clusters"</span>,</span>
+<span id="cb126-13"><a href="#cb126-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Cluster"</span>,</span>
+<span id="cb126-14"><a href="#cb126-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Number of Documents"</span></span>
+<span id="cb126-15"><a href="#cb126-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb126-16"><a href="#cb126-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb126-17"><a href="#cb126-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb126-18"><a href="#cb126-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb126-19"><a href="#cb126-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span></span>
+<span id="cb126-20"><a href="#cb126-20" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/cluster-visualization-1.png" class="img-fluid figure-img" width="3000"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb127"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate overall corpus sentiment statistics.</span></span>
+<span id="cb127-2"><a href="#cb127-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"OVERALL CORPUS SENTIMENT SUMMARY"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "OVERALL CORPUS SENTIMENT SUMMARY"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb129"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb129-1"><a href="#cb129-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Mean AFINN Sentiment:"</span>, <span class="fu">round</span>(<span class="fu">mean</span>(doc_sentiment<span class="sc">$</span>afinn), <span class="dv">3</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Mean AFINN Sentiment: 1.67"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb131"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Median AFINN Sentiment:"</span>, <span class="fu">round</span>(<span class="fu">median</span>(doc_sentiment<span class="sc">$</span>afinn), <span class="dv">3</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Median AFINN Sentiment: 0"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Standard Deviation:"</span>, <span class="fu">round</span>(<span class="fu">sd</span>(doc_sentiment<span class="sc">$</span>afinn), <span class="dv">3</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Standard Deviation: 4.588"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Documents with Positive Sentiment:"</span>, <span class="fu">sum</span>(doc_sentiment<span class="sc">$</span>afinn <span class="sc">&gt;</span> <span class="dv">0</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Documents with Positive Sentiment: 48"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Documents with Negative Sentiment:"</span>, <span class="fu">sum</span>(doc_sentiment<span class="sc">$</span>afinn <span class="sc">&lt;</span> <span class="dv">0</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Documents with Negative Sentiment: 22"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Documents with Neutral Sentiment:"</span>, <span class="fu">sum</span>(doc_sentiment<span class="sc">$</span>afinn <span class="sc">==</span> <span class="dv">0</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Documents with Neutral Sentiment: 30"</code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

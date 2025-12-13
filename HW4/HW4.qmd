@@ -1,34 +1,817 @@
 ---
-title: HOMEWORK 4
-format: html
-editor: visual
-resources:
-  - "Lecture 21 - Point Pattern Analysis.html"
+title: "Text Mining Analysis of Reuters News Articles"
+author:
+  - Alex Stauffer
+  - Jun Luu
+  - Tess Vu
+date: "`r Sys.Date()`"
+format: 
+  html:
+    toc: true
+    theme: journal
+  pdf:
+    toc: true
+knitr: 
+  opts_chunk: 
+    fig.path: "images/"
 ---
 
-Note: Need to decide among ...
-
-**Text Analysis Lecture 25-1: *Text Mining***
-
-**Text Analysis Lecture 25-2: *Using ChatGPT for Data Analysis***
-
-
 ```{r library-setup}
+#| message: false
+#| warning: false
+
+# Load required libraries for text mining and analysis.
+# NOTE: Load tm and Reuters BEFORE httr to avoid content() function conflicts.
 library(dplyr)
 library(stringr)
 library(tidyverse)
 library(ggplot2)
 library(kableExtra)
-
 library(wordcloud)
-library(text)
 library(tm)
 library(SnowballC)
-library(words)
-library(NbClust)
-library(stringr)
-library(dplyr)
 library(syuzhet)
+library(RColorBrewer)
+library(textdata)
+library(NbClust)
 
+# Install Reuters corpus package if needed.
+# install.packages("tm.corpus.Reuters21578", repos = "http://datacube.wu.ac.at")
+library(tm.corpus.Reuters21578)
+
+# Set options for cleaner numeric output.
 options(scipen = 999)
+```
+
+## Data Loading and Corpus Creation
+
+```{r load-reuters-data}
+#| message: false
+#| warning: false
+
+# Load the Reuters-21578 dataset.
+data("Reuters21578")
+reuters_docs <- Reuters21578
+
+# Check the number of documents in the corpus.
+num_docs <- length(reuters_docs)
+print(paste("Documents in Reuters corpus:", num_docs))
+```
+
+```{r subset-corpus}
+#| message: false
+#| warning: false
+
+# For this analysis, we will work with the first 100 documents to ensure we have at least 50 entries.
+# This also makes the analysis more manageable computationally.
+reuters_corpus <- reuters_docs[1:100]
+
+# Verify the corpus size.
+print(paste("Documents for analysis:", length(reuters_corpus)))
+```
+
+```{r extract-raw-text}
+#| message: false
+#| warning: false
+
+# IMPORTANT: Extract raw text from corpus BEFORE loading httr.
+# This avoids the conflict between httr::content() and tm::content().
+# The Reuters21578 corpus stores text in the $content slot of each document.
+
+# First, let us inspect the structure of one document to understand how to extract text.
+print("INSPECTING DOCUMENT STRUCTURE")
+print(class(reuters_corpus[[1]]))
+print(names(reuters_corpus[[1]]))
+
+# Extract text using the content() function from tm package (before httr masks it).
+raw_texts_for_gpt <- character(length(reuters_corpus))
+for (i in seq_along(reuters_corpus)) {
+  # Use tm::content() explicitly to get the text content.
+  text_content <- as.character(reuters_corpus[[i]])
+  # Collapse if it is a vector of lines.
+  if (length(text_content) > 1) {
+    raw_texts_for_gpt[i] <- paste(text_content, collapse = " ")
+  } else if (length(text_content) == 1) {
+    raw_texts_for_gpt[i] <- text_content
+  } else {
+    raw_texts_for_gpt[i] <- ""
+  }
+}
+
+# Verify extraction worked.
+print(paste("Extracted", length(raw_texts_for_gpt), "documents for GPT summarization"))
+print(paste("First document length:", nchar(raw_texts_for_gpt[1]), "characters"))
+print(paste("First document preview:", substr(raw_texts_for_gpt[1], 1, 300)))
+```
+
+## Data Preprocessing and Cleaning
+
+```{r convert-lowercase}
+#| message: false
+#| warning: false
+
+# Convert all text to lowercase for consistent matching.
+reuters_corpus <- tm_map(reuters_corpus, content_transformer(tolower))
+```
+
+```{r define-cleaning-functions}
+#| message: false
+#| warning: false
+
+# Define a function to replace specific characters with spaces.
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+
+# Define a function to remove apostrophes.
+remApostrophe <- content_transformer(function(x, pattern) gsub(pattern, "", x))
+```
+
+```{r remove-special-characters}
+#| message: false
+#| warning: false
+
+# Define a custom function to remove special characters.
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+
+# Remove special characters by replacing them with spaces.
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "@")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "/")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\\]")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\\$")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "—")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "‐")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\u201C")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\u2018")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\u201D")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\u2019")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\\(")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "\\)")
+reuters_corpus <- tm_map(reuters_corpus, toSpace, "-")
+
+# Remove apostrophes using a custom function.
+remApostrophe <- content_transformer(function(x, pattern) gsub(pattern, "", x))
+reuters_corpus <- tm_map(reuters_corpus, remApostrophe, "'")
+```
+
+```{r remove-numbers-punctuation}
+#| message: false
+#| warning: false
+
+# Remove numbers from the corpus.
+reuters_corpus <- tm_map(reuters_corpus, removeNumbers)
+
+# Remove punctuation from the corpus.
+reuters_corpus <- tm_map(reuters_corpus, removePunctuation)
+```
+
+```{r preview-after-special-chars}
+#| message: false
+#| warning: false
+
+# Preview the first document after removing special characters, numbers, and punctuation.
+print("PREVIEW OF FIRST DOCUMENT (AFTER REMOVING SPECIAL CHARACTERS, NUMBERS, PUNCTUATION)")
+print(paste(as.character(reuters_corpus[[1]]), collapse = " "))
+```
+
+```{r view-stopwords}
+#| message: false
+#| warning: false
+
+# View the list of English stop words that will be removed.
+print("ENGLISH STOP WORDS TO BE REMOVED")
+print(stopwords("english"))
+```
+
+```{r remove-stopwords}
+#| message: false
+#| warning: false
+
+# Remove English stop words from the corpus.
+reuters_corpus <- tm_map(reuters_corpus, removeWords, stopwords("english"))
+```
+
+```{r remove-custom-stopwords}
+#| message: false
+#| warning: false
+
+# Remove additional custom stop words specific to news articles.
+# These include common news-related terms that do not add analytical value.
+custom_stopwords <- c("said", "says", "also", "reuter", "reuters", "will", "can", "may", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "mln", "dlrs", "pct", "cts", "year", "years", "month", "months", "week", "weeks", "day", "days", "inc", "corp", "ltd", "company", "companies")
+
+reuters_corpus <- tm_map(reuters_corpus, removeWords, custom_stopwords)
+```
+
+```{r strip-whitespace}
+#| message: false
+#| warning: false
+
+# Strip extra whitespace from the documents.
+reuters_corpus <- tm_map(reuters_corpus, stripWhitespace)
+```
+
+```{r preview-after-stopwords}
+#| message: false
+#| warning: false
+
+# Preview the first document after stop word removal.
+print("PREVIEW OF FIRST DOCUMENT (AFTER STOP WORD REMOVAL)")
+print(paste(as.character(reuters_corpus[[1]]), collapse = " "))
+```
+
+```{r apply-stemming}
+#| message: false
+#| warning: false
+
+# Apply stemming to reduce words to their root forms.
+# This helps consolidate related words like "running", "runs", "ran" to "run".
+reuters_corpus_stemmed <- tm_map(reuters_corpus, stemDocument)
+
+# Preview the first document after stemming.
+print("PREVIEW OF FIRST DOCUMENT (AFTER STEMMING)")
+print(paste(as.character(reuters_corpus_stemmed[[1]]), collapse = " "))
+```
+
+## Term Document Matrix Creation
+
+```{r create-dtm}
+#| message: false
+#| warning: false
+
+# Create a Document Term Matrix from the cleaned corpus.
+dtm <- DocumentTermMatrix(reuters_corpus)
+
+# Inspect the DTM structure.
+print("DOCUMENT TERM MATRIX SUMMARY")
+tm::inspect(dtm)
+```
+
+```{r convert-dtm-matrix}
+#| message: false
+#| warning: false
+
+# Convert the DTM to a regular matrix for further analysis.
+m <- as.matrix(dtm)
+
+# Display the dimensions of the matrix.
+print(paste("Matrix Dimensions:", nrow(m), "documents x", ncol(m), "terms"))
+```
+
+```{r term-frequency-distribution}
+#| message: false
+#| warning: false
+
+# Calculate the total frequency of each term across all documents.
+term_freq <- colSums(m)
+
+# Convert to a data frame for easier manipulation.
+term_freq_df <- data.frame(
+  term = names(term_freq),
+  frequency = as.numeric(term_freq),
+  stringsAsFactors = FALSE
+)
+
+# Sort by frequency in descending order.
+term_freq_df <- term_freq_df %>%
+  arrange(desc(frequency))
+
+# Display the top 20 most frequent terms.
+print(head(term_freq_df, 20))
+```
+
+```{r histogram-term-frequency}
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 6
+#| fig-dpi: 300
+
+# Create a histogram of term frequencies.
+ggplot(term_freq_df, aes(x = frequency)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  scale_x_log10() +
+  labs(
+    title = "Distribution of Term Frequencies (Log Scale)",
+    x = "Term Frequency (Log Scale)",
+    y = "Number of Terms"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+  )
+```
+
+## Word Cloud Visualization
+
+```{r wordcloud-basic}
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8
+#| fig-dpi: 300
+
+# Create a basic word cloud of the most frequent terms.
+set.seed(42)
+wordcloud(
+  words = term_freq_df$term,
+  freq = term_freq_df$frequency,
+  min.freq = 5,
+  max.words = 150,
+  random.order = FALSE,
+  rot.per = 0.35,
+  colors = brewer.pal(8, "Dark2")
+)
+```
+
+```{r wordcloud-colorful}
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8
+#| fig-dpi: 300
+
+# Create a more colorful word cloud with different settings.
+set.seed(123)
+wordcloud(
+  words = term_freq_df$term,
+  freq = term_freq_df$frequency,
+  min.freq = 10,
+  max.words = 100,
+  random.order = FALSE,
+  rot.per = 0.25,
+  scale = c(4, 0.5),
+  colors = brewer.pal(9, "Blues")[4:9]
+)
+```
+
+## Sentiment Analysis
+
+```{r explore-lexicons}
+#| message: false
+#| warning: false
+
+# Load and preview the sentiment lexicons available in the syuzhet package.
+# NRC LEXICON
+nrc <- syuzhet::get_sentiment_dictionary(dictionary = "nrc")
+print(head(nrc, n = 20L))
+
+# AFINN LEXICON
+afinn <- syuzhet::get_sentiment_dictionary(dictionary = "afinn")
+print(head(afinn, n = 20L))
+
+# BING LEXICON
+bing <- syuzhet::get_sentiment_dictionary(dictionary = "bing")
+print(head(bing, n = 20L))
+
+# SYUZHET LEXICON
+syuzhet_lex <- syuzhet::get_sentiment_dictionary(dictionary = "syuzhet")
+print(head(syuzhet_lex, n = 20L))
+```
+
+```{r nrc-example}
+#| message: false
+#| warning: false
+
+# Demonstrate the NRC lexicon with example words.
+# NRC Sentiment for "profit".
+print(get_nrc_sentiment("profit"))
+
+# NRC Sentiment for "loss".
+print(get_nrc_sentiment("loss"))
+
+# NRC Sentiment for "crisis".
+print(get_nrc_sentiment("crisis"))
+```
+
+```{r prepare-sentiment-data}
+#| message: false
+#| warning: false
+
+# Prepare the term frequency data for sentiment analysis.
+sentiment_df <- data.frame(
+  term = term_freq_df$term,
+  term_frequency = term_freq_df$frequency,
+  stringsAsFactors = FALSE
+)
+```
+
+```{r nrc-sentiment-analysis}
+#| message: false
+#| warning: false
+
+# Get NRC sentiment scores for all terms in the corpus.
+nrc_sentiment <- get_nrc_sentiment(sentiment_df$term)
+
+# Combine the sentiment scores with the term data.
+sentiment_combined <- cbind(sentiment_df, nrc_sentiment)
+
+# Preview the combined data.
+print(head(sentiment_combined, 10))
+```
+
+```{r weight-sentiment-by-frequency}
+#| message: false
+#| warning: false
+
+# Multiply sentiment scores by term frequency to get weighted sentiment.
+sentiment_cols <- names(nrc_sentiment)
+
+# Create a copy for weighted calculations.
+sentiment_weighted <- sentiment_combined
+
+# Weight each sentiment column by term frequency.
+for (col in sentiment_cols) {
+  sentiment_weighted[[col]] <- sentiment_weighted[[col]] * sentiment_weighted$term_frequency
+}
+
+# Preview the weighted data.
+print(head(sentiment_weighted, 10))
+```
+
+```{r total-sentiment-barplot}
+#| message: false
+#| warning: false
+#| fig-width: 12
+#| fig-height: 7
+#| fig-dpi: 300
+
+# Calculate total sentiment across all terms.
+sentiment_totals <- colSums(sentiment_weighted[, sentiment_cols])
+
+# Create a data frame for plotting.
+sentiment_totals_df <- data.frame(
+  sentiment = names(sentiment_totals),
+  count = as.numeric(sentiment_totals),
+  stringsAsFactors = FALSE
+)
+
+# Create a bar plot of sentiment totals.
+ggplot(sentiment_totals_df, aes(x = reorder(sentiment, -count), y = count, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Set3") +
+  labs(
+    title = "Total Sentiment Scores in Reuters Corpus (NRC Lexicon)",
+    x = "Sentiment Category",
+    y = "Weighted Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    legend.position = "none"
+  )
+```
+
+```{r compare-lexicons}
+#| message: false
+#| warning: false
+
+# Compare sentiment scores across different lexicons.
+sentiment_df$syuzhet_score <- as.numeric(get_sentiment(sentiment_df$term, method = "syuzhet"))
+sentiment_df$bing_score <- as.numeric(get_sentiment(sentiment_df$term, method = "bing"))
+sentiment_df$afinn_score <- as.numeric(get_sentiment(sentiment_df$term, method = "afinn"))
+sentiment_df$nrc_score <- as.numeric(get_sentiment(sentiment_df$term, method = "nrc"))
+
+# Preview the multi-lexicon sentiment data.
+print(head(sentiment_df, 20))
+```
+
+```{r lexicon-histograms}
+#| message: false
+#| warning: false
+#| fig-width: 12
+#| fig-height: 10
+#| fig-dpi: 300
+
+# Create histograms comparing sentiment distributions across lexicons.
+par(mfrow = c(2, 2))
+
+hist(sentiment_df$syuzhet_score, breaks = 30, col = "lightblue", main = "Syuzhet Lexicon Scores", xlab = "Sentiment Score")
+hist(sentiment_df$bing_score, breaks = 30, col = "lightgreen", main = "Bing Lexicon Scores", xlab = "Sentiment Score")
+hist(sentiment_df$afinn_score, breaks = 30, col = "lightyellow", main = "AFINN Lexicon Scores", xlab = "Sentiment Score")
+hist(sentiment_df$nrc_score, breaks = 30, col = "lightpink", main = "NRC Lexicon Scores", xlab = "Sentiment Score")
+
+par(mfrow = c(1, 1))
+```
+
+```{r sentiment-classification}
+#| message: false
+#| warning: false
+
+# Classify terms as positive, neutral, or negative for each lexicon.
+sentiment_classified <- sentiment_df %>%
+  mutate(
+    syuzhet_class = sign(syuzhet_score),
+    bing_class = sign(bing_score),
+    afinn_class = sign(afinn_score),
+    nrc_class = sign(nrc_score)
+  ) %>%
+  mutate(
+    syuzhet_class = factor(syuzhet_class, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive")),
+    bing_class = factor(bing_class, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive")),
+    afinn_class = factor(afinn_class, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive")),
+    nrc_class = factor(nrc_class, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive"))
+  )
+
+# Calculate proportions for each lexicon.
+print("SENTIMENT CLASSIFICATION BY LEXICON")
+
+print("Syuzhet Lexicon:")
+print(prop.table(table(sentiment_classified$syuzhet_class)))
+
+print("Bing Lexicon:")
+print(prop.table(table(sentiment_classified$bing_class)))
+
+print("AFINN Lexicon:")
+print(prop.table(table(sentiment_classified$afinn_class)))
+
+print("NRC Lexicon:")
+print(prop.table(table(sentiment_classified$nrc_class)))
+```
+
+```{r sentiment-comparison-table}
+#| message: false
+#| warning: false
+
+# Create a summary table comparing lexicon results.
+lexicon_summary <- data.frame(
+  Lexicon = c("Syuzhet", "Bing", "AFINN", "NRC"),
+  Negative_Pct = c(
+    sum(sentiment_classified$syuzhet_class == "Negative", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$bing_class == "Negative", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$afinn_class == "Negative", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$nrc_class == "Negative", na.rm = TRUE) / nrow(sentiment_classified) * 100
+  ),
+  Neutral_Pct = c(
+    sum(sentiment_classified$syuzhet_class == "Neutral", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$bing_class == "Neutral", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$afinn_class == "Neutral", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$nrc_class == "Neutral", na.rm = TRUE) / nrow(sentiment_classified) * 100
+  ),
+  Positive_Pct = c(
+    sum(sentiment_classified$syuzhet_class == "Positive", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$bing_class == "Positive", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$afinn_class == "Positive", na.rm = TRUE) / nrow(sentiment_classified) * 100,
+    sum(sentiment_classified$nrc_class == "Positive", na.rm = TRUE) / nrow(sentiment_classified) * 100
+  )
+)
+
+# Round the percentages.
+lexicon_summary$Negative_Pct <- round(lexicon_summary$Negative_Pct, 2)
+lexicon_summary$Neutral_Pct <- round(lexicon_summary$Neutral_Pct, 2)
+lexicon_summary$Positive_Pct <- round(lexicon_summary$Positive_Pct, 2)
+
+# Display as a formatted table.
+lexicon_summary %>%
+  kable(col.names = c("Lexicon", "Negative (%)", "Neutral (%)", "Positive (%)")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+```{r top-sentiment-terms}
+#| message: false
+#| warning: false
+
+# Identify the most positive and most negative terms.
+top_positive <- sentiment_df %>%
+  filter(afinn_score > 0) %>%
+  arrange(desc(afinn_score * term_frequency)) %>%
+  head(10)
+print(top_positive[, c("term", "term_frequency", "afinn_score")])
+
+top_negative <- sentiment_df %>%
+  filter(afinn_score < 0) %>%
+  arrange(afinn_score * term_frequency) %>%
+  head(10)
+print(top_negative[, c("term", "term_frequency", "afinn_score")])
+```
+
+```{r document-level-sentiment}
+#| message: false
+#| warning: false
+#| fig-width: 12
+#| fig-height: 6
+#| fig-dpi: 300
+
+# Calculate document-level sentiment scores.
+# Extract text from the cleaned corpus using tm::content() explicitly.
+doc_texts <- character(length(reuters_corpus))
+for (i in seq_along(reuters_corpus)) {
+  text_content <- as.character(reuters_corpus[[i]])
+  if (length(text_content) > 1) {
+    doc_texts[i] <- paste(text_content, collapse = " ")
+  } else if (length(text_content) == 1) {
+    doc_texts[i] <- text_content
+  } else {
+    doc_texts[i] <- ""
+  }
+}
+
+# Calculate sentiment for each document using different methods.
+doc_sentiment <- data.frame(
+  doc_id = seq_along(doc_texts),
+  syuzhet = sapply(doc_texts, function(x) sum(get_sentiment(x, method = "syuzhet"))),
+  bing = sapply(doc_texts, function(x) sum(get_sentiment(x, method = "bing"))),
+  afinn = sapply(doc_texts, function(x) sum(get_sentiment(x, method = "afinn"))),
+  nrc = sapply(doc_texts, function(x) sum(get_sentiment(x, method = "nrc")))
+)
+
+# Preview document sentiment.
+print(head(doc_sentiment, 10))
+
+# Plot document sentiment distribution.
+ggplot(doc_sentiment, aes(x = doc_id, y = afinn)) +
+  geom_bar(stat = "identity", fill = ifelse(doc_sentiment$afinn >= 0, "steelblue", "coral")) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  labs(
+    title = "Document-Level Sentiment Scores (AFINN Lexicon)",
+    x = "Document ID",
+    y = "Sentiment Score"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+  )
+```
+
+## Text Clustering (K-Means)
+
+```{r dtm-cleanup}
+#| message: false
+#| warning: false
+
+# To make clustering feasible, we need to remove sparse (infrequently occurring) terms.
+# This keeps only terms that appear in at least a certain percentage of documents.
+# Using 0.99 sparsity means we keep terms that appear in at least 1% of documents.
+dtm_cluster <- removeSparseTerms(dtm, 0.99)
+
+# Convert the cleaned DTM to a matrix.
+m_cluster <- as.matrix(dtm_cluster)
+
+print(paste("Cleaned Matrix Dimensions:", nrow(m_cluster), "documents x", ncol(m_cluster), "terms"))
+```
+s
+```{r nbclust-analysis}
+#| message: false
+#| warning: false
+#| cache: true
+#| fig-width: 10
+#| fig-height: 6
+#| fig-dpi: 300
+
+# Prepare the data for clustering analysis.
+# For sparse text data, NbClust often fails due to matrix singularity issues.
+# Instead, we use the elbow method (within-cluster sum of squares) to find optimal k.
+
+# Remove columns that have zero variance (constant values cause issues for clustering).
+col_variances <- apply(m_cluster, 2, var)
+m_cluster_clean <- m_cluster[, col_variances > 0]
+
+print(paste("Matrix dimensions after removing zero-variance columns:", nrow(m_cluster_clean), "x", ncol(m_cluster_clean)))
+
+# For very sparse matrices, we can also remove very rare terms to improve clustering.
+# Keep only terms that appear in at least 5% of documents.
+term_doc_freq <- colSums(m_cluster_clean > 0) / nrow(m_cluster_clean)
+m_cluster_reduced <- m_cluster_clean[, term_doc_freq >= 0.05]
+
+print(paste("Matrix dimensions after filtering rare terms:", nrow(m_cluster_reduced), "x", ncol(m_cluster_reduced)))
+
+# Use the Elbow Method to determine optimal number of clusters.
+# Calculate within-cluster sum of squares for k = 1 to 10.
+set.seed(42)
+wss <- numeric(10)
+
+for (k in 1:10) {
+  kmeans_temp <- kmeans(m_cluster_reduced, centers = k, nstart = 25, iter.max = 100)
+  wss[k] <- kmeans_temp$tot.withinss
+}
+
+# Create a data frame for plotting.
+elbow_df <- data.frame(
+  k = 1:10,
+  wss = wss
+)
+
+# Plot the elbow curve.
+ggplot(elbow_df, aes(x = k, y = wss)) +
+  geom_line(color = "steelblue", size = 1) +
+  geom_point(color = "steelblue", size = 3) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    title = "Elbow Method for Optimal Number of Clusters",
+    x = "Number of Clusters (k)",
+    y = "Within-Cluster Sum of Squares"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+  )
+
+# Print the WSS values.
+print("WITHIN-CLUSTER SUM OF SQUARES BY K")
+print(elbow_df)
+```
+
+```{r kmeans-clustering}
+#| message: false
+#| warning: false
+
+# Based on the elbow plot, select the optimal k.
+# Typically, we look for the "elbow" where the rate of decrease sharply changes.
+# For text data, k = 3 or k = 4 is often a good choice.
+k <- 4
+
+# Run k-means on the reduced matrix (with filtered rare terms).
+set.seed(42)
+kmeans_result <- kmeans(m_cluster_reduced, centers = k, nstart = 25, iter.max = 100)
+
+# Create a data frame with document IDs and their cluster assignments.
+cluster_assignments <- data.frame(
+  doc_id = 1:nrow(m_cluster_reduced),
+  cluster = kmeans_result$cluster
+)
+
+# Display the size of each cluster.
+print("CLUSTER SIZES")
+print(table(kmeans_result$cluster))
+
+# Display clustering quality metrics.
+cat("\n")
+print(paste("Total Within-Cluster Sum of Squares:", round(kmeans_result$tot.withinss, 2)))
+print(paste("Between-Cluster Sum of Squares:", round(kmeans_result$betweenss, 2)))
+print(paste("BSS/TSS Ratio:", round(kmeans_result$betweenss / kmeans_result$totss * 100, 2), "%"))
+```
+
+```{r cluster-top-terms}
+#| message: false
+#| warning: false
+
+# Get the cluster centers (each row is a cluster, each column is a term).
+cluster_centers <- kmeans_result$centers
+
+# Create a data frame of cluster centers with term names.
+cluster_centers_df <- as.data.frame(cluster_centers)
+colnames(cluster_centers_df) <- colnames(m_cluster_reduced)
+
+# Define a function to get top terms for each cluster.
+get_top_terms <- function(cluster_center, term_names, n = 10) {
+  # Sort terms by their center value (importance in the cluster).
+  sorted_indices <- order(cluster_center, decreasing = TRUE)
+  top_indices <- sorted_indices[1:n]
+  
+  result <- data.frame(
+    Term = term_names[top_indices],
+    Prominence = round(cluster_center[top_indices], 3)
+  )
+  return(result)
+}
+
+# Get top 10 terms for each cluster.
+term_names <- colnames(cluster_centers_df)
+
+for (i in 1:k) {
+  top_terms <- get_top_terms(as.numeric(cluster_centers_df[i, ]), term_names, n = 10)
+  print(top_terms)
+  cat("\n")
+}
+```
+
+```{r cluster-visualization}
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 6
+#| fig-dpi: 300
+
+# Create a bar plot showing cluster sizes.
+cluster_size_df <- data.frame(
+  Cluster = factor(1:k),
+  Size = as.numeric(table(kmeans_result$cluster))
+)
+
+ggplot(cluster_size_df, aes(x = Cluster, y = Size, fill = Cluster)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Size), vjust = -0.5, size = 4) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Document Distribution Across K-Means Clusters",
+    x = "Cluster",
+    y = "Number of Documents"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    legend.position = "none"
+  )
+```
+
+```{r overall-sentiment-summary}
+#| message: false
+#| warning: false
+
+# Calculate overall corpus sentiment statistics.
+print("OVERALL CORPUS SENTIMENT SUMMARY")
+print(paste("Mean AFINN Sentiment:", round(mean(doc_sentiment$afinn), 3)))
+print(paste("Median AFINN Sentiment:", round(median(doc_sentiment$afinn), 3)))
+print(paste("Standard Deviation:", round(sd(doc_sentiment$afinn), 3)))
+print(paste("Documents with Positive Sentiment:", sum(doc_sentiment$afinn > 0)))
+print(paste("Documents with Negative Sentiment:", sum(doc_sentiment$afinn < 0)))
+print(paste("Documents with Neutral Sentiment:", sum(doc_sentiment$afinn == 0)))
 ```
