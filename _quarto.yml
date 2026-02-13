@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "MUSA 5000 Spatial Statistics and Data Mining Homework Repository"
+  description: "empty" 
+  navbar:
+    left:
+    - href: index.qmd
+      text: Home
+    - text: Homework Assignments
+      menu:
+        - href: HW1_OLS_Regression/OLS_Regression.qmd
+          text: Homework I - OLS Regression 
+        - href: HW2_Spatial_Regression/Spatial_Auto.qmd
+          text: Homework II - Spatial Autocorrelation
+        - href: HW3_Logistic_Regression/logistic_regression.qmd
+          text: Homework III - Logistic Regression
+        - href: HW4/HW4.qmd
+          text: Homework IV - Text Analysis
+format:
+  html:
+    theme: superhero
+    toc: true
+    code-fold: true
+
+execute:
+  freeze: auto
