@@ -1,6 +1,12 @@
 project:
   type: website
   output-dir: docs
+  render: 
+    - HW1_OLS_Regression/OLS_Regression.qmd
+    - HW2_Spatial_Regression/Spatial_Auto.qmd
+    - HW3_Logistic_Regression/logistic_regression.qmd
+    - HW4/HW4.qmd
+
 
 website:
   title: "MUSA 5000 Spatial Statistics and Data Mining Homework Repository"
