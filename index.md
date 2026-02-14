@@ -12,10 +12,12 @@ It covers skills needed to analyze urban data and perform common spatial analyse
 
 Specific components include: 1. regression analysis (OLS, ridge/lasso, logistic, multinomial logit); 2. measures of spatial autocorrelation; 3. spatial regression (spatial lag, spatial error, geographically weighted regression); 4. point pattern analysis; 5. an introduction to clustering methods (k-means, hierarchical clustering, DBSCAN); and 6. big data and GIS.
 
-## Portfolio Structure
-- **Weekly Notes:** learning reflections and key concepts
-- **Labs:** completed assignments and analyses
-- **Final Project:** capstone modeling challenge
+## Homework Assignments
+
+- [Homework I - OLS Regression](HW1_OLS_Regression/OLS_Regression.html)
+- [Homework II - Spatial Regression](HW2_Spatial_Regression/index.md)
+- [Homework III - Logistic Regression](HW3_Logistic_Regression/logistic_regression.html)
+- [Homework IV - Text Mining](HW4/index.md)
 
 ## About Me
 
@@ -26,10 +28,10 @@ These homework assignments were done in collaboration with **Jun Luu** and **Tes
 
 ## Contact
 
-- Email: [astauf03@upenn.edu, astauf03@gmail.com]
-- GitHub: [@astauf03]
-- Portfolio[https://astauf03.github.io/portfolio/]
+- **Email:** [School](astauf03@upenn.edu) , [Personal](astauf03@gmail.com)
+- **GitHub:** [@astauf03](https://github.com/astauf03)
+- **Portfolio:** [astauf03.github.io/portfolio](https://astauf03.github.io/portfolio/)
 
-- Jun Luu's Github: [@jenniferluu6]
-
-- Tess Vu's Github: [@tess-vu]
+**Collaborators:**
+- Jun Luu: [@jenniferluu6](https://github.com/jenniferluu6)
+- Tess Vu: [@tess-vu](https://github.com/tess-vu)

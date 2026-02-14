@@ -1,5 +1,6 @@
 ---
 title: Logistic and Multinomial Logistic Regression
+author: "Alex Stauffer, Jun Luu, Tess Vu"
 format: html
 editor: visual
 ---
@@ -11,7 +12,7 @@ Prior to running any of the analyses, be sure to set the working directory using
 ```{r setup}
 library(aod)
 library(ggplot2)
-library(rms)
+#library(rms)
 library(gmodels)
 library(nnet)
 library(DAAG)

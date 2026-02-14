@@ -1,7 +1,7 @@
 ---
-title: "Spatial_Auto"
+title: "Spatial Regression Analysis"
+author: "Alex Stauffer, Jun Luu, Tess Vu"
 format: html
-editor: visual
 ---
 
 # **1. Spatial Lag and Spatial Error Regression**
@@ -14,7 +14,7 @@ library(spdep)
 library(spgwr)
 library(tmap)
 library(spatialreg)
-library(whitestrap)
+#library(whitestrap)
 library(lmtest)
 library(tseries)
 
@@ -249,7 +249,7 @@ The residual standard error 0.3676 indicates that the model is, on average, off 
 
 regress_data$OLS_RESIDU <- residuals(ols_reg)
 
-regress_data$OLS_RESIDU <- lag.listw(queenlist, regress_data$OLS_RESIDU)
+regress_data$OLS_LAG <- lag.listw(queenlist, regress_data$OLS_RESIDU)
 
 moran_RESIDU <- moran.plot(regress_data$OLS_RESIDU, queenlist)
 ```
@@ -295,7 +295,8 @@ bptest(ols_reg)
 
 ```{r}
 #Prints the results of the White Test to assess whether heteroscedasticity is present (package: whitestrap)
-white_test(ols_reg)   
+#Note, whitestrap has installation constraints on CRAN, below is the code one could run if they wanted to see the differentiation between Breusch-Pagan and White Test.
+#white_test(ols_reg)   
 ```
 
 **White's Test Interpretation:** This homoscedasticity test's main differentiator from Breusch-Pagan is that it can test for non-linear heteroscedasticity. While this is a very robust test, it doesn't have as strong influence when sample sizes are small.
