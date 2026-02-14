@@ -19,7 +19,9 @@ Specific components include: 1. regression analysis (OLS, ridge/lasso, logistic,
 
 ## About Me
 
-My name is Alexandra Stauffer, I am a graduate student in the Urban Spatial Analytics program with the University of Pennsylvania. Alongside my background in anthropology, I am interested in public service through the spatial lens. I currently am a data intern for the City of Philadelphia's Managing Director's Office - Health and Human Services.  These homework assignments were done in collaboration with Jun Luu and Tess Vu, their githubs will be linked below. 
+My name is Alexandra Stauffer, I am a graduate student in the Urban Spatial Analytics program with the University of Pennsylvania. Alongside my background in anthropology, I am interested in public service through the spatial lens. I currently am a data intern for the City of Philadelphia's Managing Director's Office - Health and Human Services.  
+
+These homework assignments were done in collaboration with **Jun Luu** and **Tess Vu**, their githubs will be linked below. 
 
 
 ## Contact
