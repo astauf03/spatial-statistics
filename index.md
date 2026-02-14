@@ -1,5 +1,8 @@
 ---
 title: "MUSA 5000 Portfolio"
+author: "Alex Stauffer, Jun Luu, Tess Vu"
+date: today
+output: html_document
 ---
 
 # Welcome to the MUSA 5000 Portfolio
@@ -11,6 +14,8 @@ This portfolio showcases the four main homework assignments from the MUSA progra
 It covers skills needed to analyze urban data and perform common spatial analyses that draw on traditional statistics, spatial econometrics, and machine learning. 
 
 Specific components include: 1. regression analysis (OLS, ridge/lasso, logistic, multinomial logit); 2. measures of spatial autocorrelation; 3. spatial regression (spatial lag, spatial error, geographically weighted regression); 4. point pattern analysis; 5. an introduction to clustering methods (k-means, hierarchical clustering, DBSCAN); and 6. big data and GIS.
+
+The actual code sources contain incomplete descriptive analyses, but the ones I could render will be featured on the website.
 
 ## Homework Assignments
 

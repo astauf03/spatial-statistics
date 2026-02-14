@@ -1,6 +1,6 @@
 # Homework II - Spatial Regression Analysis
 
-[Download Full Analysis (PDF)](./Spatial_Auto.pdf)
+[Download Full Analysis (PDF)](docs/HW2_Spatial_Regression/HW2 Spatial Lag, Spatial Error and Geographically Weighted Regression.pdf)
 
 ## Overview
 
